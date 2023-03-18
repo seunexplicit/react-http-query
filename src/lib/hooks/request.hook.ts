@@ -1,48 +1,29 @@
 import createFormData from '../helpers/create-form-data';
 import MemoryStorageContext from '../contexts/memory-storage.context';
 import objectDeepEqual from '../helpers/object-deep-equal';
-import queryBuilder from '../helpers/query-builder';
-import RequestContext from '../contexts/request.context';
-import { generatePath, getRequestAbortter, requestHeaderBuilder } from '../helpers/request.helper';
-import { InterceptorPayload, InterceptorResponsePayload, RequestHeader, RequestMethod } from '../index.d';
-import { retrieveStoredValue, saveValueToLocalStorage, saveValueToMemory } from '../helpers/stored-value-management';
-import { useCallback, useContext, useRef, useState } from 'react';
 import PrivateContext from '../contexts/private.context';
-
-interface RequestPayload {
-    retries?: number;
-    bearer?: boolean;
-    timeout?: number;
-    useBaseUrl?: boolean;
-    errorMessage?: string;
-    forceRefetch?: boolean;
-    header?: RequestHeader;
-    successMessage?: string;
-    query?: Record<string, unknown>;
-}
-
-interface GetRequestPayload extends RequestPayload {
-    method?: Extract<RequestMethod, 'GET'>;
-}
-
-interface BodyRequestPayload extends RequestPayload {
-    method?: Exclude<RequestMethod, 'GET'>;
-    body: Record<string, any>;
-}
-
-interface FormDataRequestPayload extends RequestPayload {
-    method?: Exclude<RequestMethod, 'GET'>;
-    formData: Record<string, any>;
-}
-
-export interface IResponse<T, E> {
-    loading: boolean;
-    error: true | false;
-    success: boolean;
-    data?:  T | E | null;
-    message: string;
-    status?: number | string | null;
-}
+import RequestContext from '../contexts/request.context';
+import {
+    BodyRequestPayload,
+    FormDataRequestPayload,
+    GetRequestPayload,
+    InterceptorResponsePayload,
+    IResponse,
+    UseRequestProps
+} from '../index.d';
+import {
+    fetchRequest,
+    generatePath,
+    getRequestAbortter,
+    requestHeaderBuilder
+} from '../helpers/request.helper';
+import { retrieveStoredValue, saveValueToLocalStorage, saveValueToMemory, saveValueToSession } from '../helpers/stored-value-management';
+import {
+    useCallback,
+    useContext,
+    useRef,
+    useState
+} from 'react';
 
 const initialState = {
     loading: false,
@@ -52,21 +33,6 @@ const initialState = {
     message: '',
     status: null,
 };
-
-
-interface UseRequestProps<T, E> {
-    name?: string;
-    baseUrl?: string;
-    localStorage?: boolean;
-    memoryStorage?: boolean;
-    sessionStorage?: boolean;
-    onSuccess?: (res: T) => void;
-    onError?: (error: E | unknown) => void;
-    interceptors?: {
-        response?: (payload: InterceptorResponsePayload) => InterceptorResponsePayload;
-        request?: (payload: InterceptorPayload) => InterceptorPayload;
-    }
-}
 
 export const useRequest = <T = Record<string, unknown> | null, E = unknown>(
     props?: UseRequestProps<T, E>
@@ -79,7 +45,7 @@ export const useRequest = <T = Record<string, unknown> | null, E = unknown>(
     const retryCount = useRef(1);
     const requestUrlRef = useRef<string>();
     const { 
-        setLoading,
+        dispatchLoadingState,
         requestTimeout, 
         dispatchErrorRequest,
         dispatchSuccessRequest,
@@ -92,7 +58,7 @@ export const useRequest = <T = Record<string, unknown> | null, E = unknown>(
     const makeRequest = useCallback(
         async (path: string, config?: GetRequestPayload | BodyRequestPayload | FormDataRequestPayload): Promise<T | E | null> => {
             try {
-                setLoading?.(true);
+                dispatchLoadingState?.(true);
                 setState((prevState) => ({ ...prevState, loading: true }));
 
                 const requestMethod =
@@ -107,7 +73,7 @@ export const useRequest = <T = Record<string, unknown> | null, E = unknown>(
                 if (!config?.forceRefetch) {
                     const storedValue = retrieveStoredValue<T>(requestUrlRef.current, storedData, name);
                     if (storedValue && objectDeepEqual(storedValue.queryParam, config?.query)) {
-                        setLoading?.(false);
+                        dispatchLoadingState?.(false);
                         setState((previousState) => 
                             getSuccessState<T>(previousState, storedValue.data, config?.successMessage)
                         );
@@ -139,42 +105,37 @@ export const useRequest = <T = Record<string, unknown> | null, E = unknown>(
                 retryCount.current = config?.retries ?? retryCount.current;
 
                 const { controller, timeoutRef } = getRequestAbortter(config?.timeout ?? requestTimeout) ?? {};
-                const response = await fetch(`${payload.url}${queryBuilder(payload.queryParams)}`, {
-                    headers: payload.headers,
-                    method: payload.method,
-                    signal: controller?.signal,
-                    body: payload.body instanceof FormData 
-                        ? payload.body
-                        : (payload.body && JSON.stringify(payload.body)),
-                });
+                const response = await fetchRequest(payload, config, controller);
 
                 if (timeoutRef) clearTimeout(timeoutRef);
 
                 const responseBody = JSON.parse((await response.text()) || '{}');
-                setLoading?.(false);
 
-                let responsePayload: InterceptorResponsePayload = {
-                    url: payload.url,
-                    data: responseBody,
-                    method: payload.method,
-                    status: response.status,
-                    queryParams: payload.queryParams,
-                }
-                responsePayload = appLevelResponseInterceptor?.(responsePayload) ?? responsePayload;
-                responsePayload = interceptors?.response?.(responsePayload) ?? responsePayload
+                let responsePayload = Object.defineProperties({}, {
+                    url: getEnumerableProperties(payload.url),
+                    data: getEnumerableProperties(responseBody, true),
+                    method: getEnumerableProperties(payload.method),
+                    status: getEnumerableProperties(response.status),
+                    queryParams: getEnumerableProperties(payload.queryParams)
+                }) as InterceptorResponsePayload;
+
+                responsePayload.data = appLevelResponseInterceptor?.(responsePayload)?.data ?? responsePayload?.data;
+                responsePayload.data = interceptors?.response?.(responsePayload)?.data ?? responsePayload?.data;
+
+                dispatchLoadingState?.(false);
 
                 if (response.ok) {
                     const successMessage =
                         config?.successMessage || responsePayload.data?.message || response.statusText;
 
-                    const newState = getSuccessState(state, responseBody, successMessage);
+                    const newState = getSuccessState(state, responsePayload.data as T, successMessage);
                     const valueToStore = {   
                         name, 
                         url: payload.url,
                         value: { data: responsePayload.data, queryParam: payload.queryParams },
                     };
                     if (memoryStorage && setStoredData) saveValueToMemory(valueToStore, setStoredData);
-                    if (sessionStorage) saveValueToLocalStorage(valueToStore);
+                    if (sessionStorage) saveValueToSession(valueToStore);
                     if (localStorage) saveValueToLocalStorage(valueToStore);
 
                     setRequestUpdate?.((initialValue) => initialValue++);
@@ -198,14 +159,16 @@ export const useRequest = <T = Record<string, unknown> | null, E = unknown>(
                     return newState.data;
                 }
             } catch (err: any) {
+                console.log(err);
                 if (retryCount.current > 1) {
                     retryCount.current = --retryCount.current;
                     const response = await makeRequest(requestUrlRef.current!!, { ...config, retries: retryCount.current });
                     return response;
                 }
 
+                dispatchLoadingState?.(false);
                 const newState = getErrorState<E>(state, err, err.message || 'An error occur.');
-                dispatchErrorRequest?.(null);
+                dispatchErrorRequest?.(err);
                 setState(newState);
                 props?.onError?.(newState.data);
                 return newState.data;
@@ -215,6 +178,7 @@ export const useRequest = <T = Record<string, unknown> | null, E = unknown>(
             appLevelResponseInterceptor,
             appLevelRequestInterceptor, 
             dispatchSuccessRequest,
+            dispatchLoadingState,
             dispatchErrorRequest,
             setRequestUpdate, 
             sessionStorage, 
@@ -223,7 +187,6 @@ export const useRequest = <T = Record<string, unknown> | null, E = unknown>(
             memoryStorage,
             interceptors, 
             localStorage,
-            setLoading,
             storedData,
             authToken, 
             baseUrl, 
@@ -253,3 +216,5 @@ const getErrorState = <E>(initialState: object, data: E | null, message?: string
     error: true,
     data,
 });
+
+const getEnumerableProperties = (value: any, writable: boolean = false) => ({ value, writable, enumerable: true });

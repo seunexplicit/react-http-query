@@ -1,19 +1,23 @@
-import React, {ReactElement} from 'react'
-import {render, RenderOptions} from '@testing-library/react'
+import React from 'react'
 import { RequestProvider } from '../lib'
+import { RequestProviderProps } from '../lib/index.d'
 
-const RequestWrapper = ({children}: {children: React.ReactNode}) => {
-  return (
-    <RequestProvider baseUrl={''}>
-        {children}
-    </RequestProvider>
-  )
-}
+export const RequestWrapper = (props: Omit<RequestProviderProps, 'children'>) => 
+  ({children}: {children: React.ReactNode}) => {
+    return (
+      <RequestProvider {...props}>
+          {children}
+      </RequestProvider>
+    )
+  }
 
-const customRender = (
-  ui: ReactElement,
-  options?: Omit<RenderOptions, 'wrapper'>,
-) => render(ui, {wrapper: RequestWrapper, ...options})
+
+export const MessagePopup = ({ message }: any) => (<div 
+  style={{position: 'absolute'}}>
+    <span>{ message }</span>
+</div>)
+
+export const __STORAGE_NAME_PREFIX__ = 'react-http-request';
 
 export const __MOCK_DATA__ = {
   body: { 
@@ -40,8 +44,37 @@ export const setupMockupRequest = () => {
     return req.url === GOOD_URL
       ? Promise.resolve(JSON.stringify(__MOCK_DATA__))
       : Promise.reject(__BAD_RESPONSE__)
-})
+  })
 }
 
-export * from '@testing-library/react'
-export {customRender as render}
+export const mockWindowProperty = (property: string | any, value: any) => {
+  const { [property]: originalProperty } = window
+  delete window[property]
+  beforeAll(() => {
+    Object.defineProperty(window, property, {
+      configurable: true,
+      writable: true,
+      value,
+    })
+  })
+  afterAll(() => {
+    window[property] = originalProperty
+  })
+}
+
+/**
+ * Set a delay
+ * 
+ * @param time Time in milliseconds
+ * @returns 
+ */
+export const delay = (time: number) => {
+  return new Promise((resolve, ) => {
+    setTimeout(() => {
+      console.log({ time, resolve })
+      resolve('')
+    }, time);
+  });
+}
+
+export * from '@testing-library/react';
