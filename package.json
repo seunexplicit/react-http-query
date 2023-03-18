@@ -1,6 +1,14 @@
 {
   "name": "react-http-query",
-  "version": "0.1.0",
+  "version": "1.0.0",
+  "author": {
+    "name": "Olusanya Timothy",
+    "email": "seunxplicit@gmail.com"
+  },
+  "repository": {
+    "url": "https://github.com/seunexplicit/react-http-query.git",
+    "type": "git"
+  },
   "private": true,
   "dependencies": {
     "@testing-library/jest-dom": "^5.16.5",

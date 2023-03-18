@@ -5,7 +5,7 @@ interface PrivateContextProps {
     requestTimeout?: number;
     dispatchErrorRequest?: (payload: any) => void;
     dispatchSuccessRequest?: (payload: any) => void;
-    setLoading?: React.Dispatch<React.SetStateAction<boolean>>;
+    dispatchLoadingState?: (state: boolean) => void;
     requestInterceptor?: (payload: InterceptorPayload) => InterceptorPayload;
     responseInterceptor?: (payload: InterceptorResponsePayload) => InterceptorResponsePayload;
 }

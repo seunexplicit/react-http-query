@@ -1,4 +1,11 @@
-import { RequestHeader } from '../index.d'
+import queryBuilder from './query-builder';
+import {
+    BodyRequestPayload,
+    FormDataRequestPayload,
+    GetRequestPayload,
+    InterceptorPayload,
+    RequestHeader
+} from '../index.d';
 /**
  * Checks if a string is an absolute url or a path
  * @param url String to check
@@ -31,7 +38,8 @@ export const generatePath = (path: string, baseUrl: string, useBaseUrl: boolean 
 };
 
 const concatBasePath = (path: string, baseUrl: string) => {
-    return baseUrl + '/' + (path.charAt(0) === '/' ? path.substring(1) : path);
+    return (baseUrl.charAt(baseUrl.length - 1) === '/' ? baseUrl : `${baseUrl}/`)  
+        + (path.charAt(0) === '/' ? path.substring(1) : path);
 }
 
 /**
@@ -79,4 +87,34 @@ export const getRequestAbortter = (timeout?: number) => {
     const controller  = new AbortController();
     const timeoutRef = setTimeout(() => controller.abort(), timeout);
     return { controller, timeoutRef } 
+}
+
+
+export const fetchRequest = (
+    payload: InterceptorPayload, 
+    config?: GetRequestPayload | BodyRequestPayload | FormDataRequestPayload,
+    controller?: AbortController
+) => {
+    return fetch(`${payload.url}${queryBuilder(payload.queryParams)}`, {
+        headers: payload.headers,
+        method: payload.method,
+        signal: controller?.signal,
+        mode: config?.mode,
+        cache: config?.cache,
+        integrity: config?.integrity,
+        keepalive: config?.keepalive,
+        window: config?.window,
+        redirect: config?.redirect,
+        referrer: config?.referrer,
+        referrerPolicy: config?.referrerPolicy,
+        credentials: config?.credentials,
+        body: payload.body instanceof FormData 
+            || payload.body instanceof URLSearchParams
+            || payload.body instanceof Blob
+            || payload.body instanceof ArrayBuffer
+            || ArrayBuffer.isView(payload.body)
+            || typeof payload.body === 'string'
+            ? payload.body
+            : (payload.body && JSON.stringify(payload.body)),
+    });
 }
