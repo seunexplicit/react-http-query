@@ -2,6 +2,11 @@
 - [Simple Usage](#simple-usage)
 - [makeRequest](#makeRequest)
     - [Configurations]()
+    - [Usage Examples]()
+        - [GET](#get)
+        - [POST](#post)
+        - [Form Data Request](#form-data-request)
+        - [Other Request Methods](#other-request-methods)
 - [useRequest](#useRequest)
     - [Parameters]()
     - [Usage Examples]()
@@ -47,8 +52,8 @@ const [{}, makeRequest] = useRequest();
 ### Configuration
 | Property | Description | Default |
 | --- | --- | --- |
-| method | This could be one of  `GET`, `POST`, `PUT`, `PATCH`, `HEAD`, `OPTIONS`. it determines the type of request that is to be made | `GET` if there is request *body*. `POST` if there is a request body |
-| body | Request body. Any accepted type of body by fetch including an ~object~ (`{value: 3}`, which implies you don't have to stringify the payload). |   |
+| method | This could be one of  `GET`, `POST`, `PUT`, `PATCH`, `HEAD`, `OPTIONS`. it determines the type of request that is to be made | `GET` if there is no request *body*. `POST` if there is a request body |
+| body | Request body. Any accepted type of body by fetch including an _object_ (`{value: 3}`, which implies you don't have to stringify the payload). |   |
 | formData | To send a `FormData` body payload, the payload can be passed to `formData` as javascript object instead of `body`, which converts the data to a `FormData` before sending the request. |    |
 | retries | Number of times to retry the request if there is a non-server error such as: Request Timeout, Network Error etc. | 1 |
 | bearer | Header authorization token. If provided it adds an Authorization property to the request header. |    |
@@ -58,4 +63,87 @@ const [{}, makeRequest] = useRequest();
 | successMessage | Response success message. The library tries to get the success message from the response payload and returns it in the state message prop, but this override any success message gotten from the response payload |   |
 | headers  | Request headers. If the headers property as passed to the headers `append` it append it to any generated headers by the library otherwise it will override any generated header |   | 
 | query  | Request query parameters. It adds any assigned value the request url as query parameters |   |
+
+### Usage Example
+### GET
+```jsx
+import React from 'react';
+import { useRequest } from 'react-http-query';
+
+const App = () => {
+    const [{data, loading, success, error}, makeUserRequest] = useRequest();
+
+    React.useEffect(() => {
+        // Generated url -> https://example.com/users?page=1&pageSize=20
+        makeUserRequest('https://example.com/users', {
+            query: { page: 1, pageSize: 20 },
+            retries: 3,
+        });
+        // No need to explicitly passed the method. GET method is assumed if no body.
+    }, [])
+}
+```
+### POST
+```jsx
+import React from 'react';
+import { useRequest } from 'react-http-query';
+
+const App = () => {
+    const [{data, loading, success, error}, makeLoginRequest] = useRequest();
+
+    const onFormSubmit = ({username, password}) => {
+        makeLoginRequest('https://example.com/login', {
+            body: { username, password },
+            timeout: 5000 // 5 secs
+        });
+        // No need to explicitly passed the method. POST method is assumed there is a body.
+    }
+}
+```
+### Form Data Request
+```jsx
+import React from 'react';
+import { useRequest } from 'react-http-query';
+
+const App = () => {
+    const [{data, loading, success, error}, makeSignUpRequest] = useRequest();
+
+    const onFormSubmit = ({username, password, event}) => {
+        makeSignUpRequest('https://example.com/signup', {
+            formData: { username, password, avatar: event.target.files[0] },
+            successMessage: "Your profile have been successfully created."
+        });
+        // The request payload would be a FormData.
+    }
+}
+```
+### Other Request Methods
+To make http request other than `GET` or `POST`, the method has to be explicitly specified.
+```jsx
+import React from 'react';
+import { useRequest } from 'react-http-query';
+
+const App = () => {
+    const [{data, loading, success, error}, makeProfileUpdateRequest] = useRequest();
+
+    const onFormSubmit = ({lastName, address}) => {
+        makeProfileUpdateRequest('https://example.com/user', {
+            body: { lastName, address },
+            mehod: "PUT"
+            errorMessage: "An error occur updating your profile"
+        });
+        // The request payload would be a FormData.
+    }
+}
+```
+## useRequest
+The `useRequest` hook provides the request metadata which are:
+- Request state
+    - data: The request returned data.
+    - loading: `Boolean` value indicating whether the request is ongoing.
+    - success: `Boolean` value indicating if the request succeeded.
+    - error: `Boolean` value indicating if tthe request failed.
+    - message: `String` either the error or success message that could be retrieve from the request.
+- makeRequest: The function used to initiate the request.
+
 
