@@ -27,27 +27,12 @@ const App = () => {
     return (<>
         { loading && <div>loading...</div> }
         { data && !loading 
-            && <table>
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Age</th>
-                    <tr>
-                </thead>
-                <tbody>
-                    { data.items?.map((item) => (
-                        <tr>
-                            <td>{item.name}</td>
-                            <td>{item.age}</td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
+            && <main>
+                <p>{ data.name }</p>
+                <p>{ data.age }</p>
+            </main>
         }
-        {
-            error && !loading 
-                && <div>An error occur fetching user</div>
-        }
+        { error && !loading && <div>An error occur fetching user</div> }
     </>)
 }
 ```
