@@ -36,3 +36,9 @@ const App = () => {
     </>)
 }
 ```
+
+## makeRequest
+`makeRequest` is the function returned by the `useRequest` hook at array index 1, that is used in making your api call. It can be given any name depending on the request purpose e.g. `makeLoginRequest` `makeDeleteUserRequest` etc. It takes two parameters which are
+- A mandatory url, which could be an absolute url or a relative path if base url is provided in either the `useRequest` hook or `Request Provider` that wraps all your app components.
+- An optional configuration object. It takes all properties that can be passed to window `fetch` function and some additional properties that is discussed below.
+### Configuration
