@@ -37,7 +37,7 @@ const App = () => {
 }
 ```
 
-## makeRequest
+## <span style="color: orange;">makeRequest<span>
 ```js
 const [{}, makeRequest] = useRequest();
 ```
