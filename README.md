@@ -11,7 +11,7 @@
     - [Parameter Properties](#parameter-properties)
     - [Usage Examples]()
 - [Request Provider](#request-provider)
-    - [Properties]()
+    - [Properties](#properties)
     - [Usage Examples]()
 - [useRequestData](#useRequestData)
     - [Parameters]()
@@ -56,7 +56,7 @@ const [{}, makeRequest] = useRequest();
 | body | Request body. Any accepted type of body by fetch including an _object_ (`{value: 3}`, which implies you don't have to stringify the payload). |   |
 | formData | To send a `FormData` body payload, the payload can be passed to `formData` as javascript object instead of `body`, which converts the data to a `FormData` before sending the request. |    |
 | retries | Number of times to retry the request if there is a non-server error such as: Request Timeout, Network Error etc. | 1 |
-| bearer | Header authorization token. If provided it adds an Authorization property to the request header. |    |
+| bearer | A `Boolean` value, that determines whether Authorization bearer token should be added to request header. See [Request Provider Properties](#properties) for more context. |  true  |
 | timeout | Request allowed duration in `milliseconds`. When request duration exceeds this value, the request will be aborted. |   |
 | useBaseUrl | Determines whether to use the base URL passed to either the `useRequest` hook or the `RequestProvider` and use the url passed to the `makeRequest` function as path regardless of if it is an absolute url or a path. There would most likely not be a need for this as the library can determine whether to use the baseUrl based on what is passed to the `makeRequest` function. | false |
 | errorMessage | Request error message. The library tries to get the error message from the response payload and returns it in the state message prop, but this override any error message gotten from the response payload |     |
@@ -99,6 +99,10 @@ const App = () => {
     }
 }
 ```
+> **Note:**
+> `makeRequest` function also returns the request's response if it is await in an async
+> function `const data = await makeRequest(/users)`, which implies a `makeRequest` instance can be used to make request to multiple endpoints.
+> This would be a bad practice, as it is advice you create different instances for each request, so their state can be properly managed.
 ### Form Data Request
 ```jsx
 import { useRequest } from 'react-http-query';
@@ -127,7 +131,7 @@ const App = () => {
     const onFormSubmit = ({lastName, address}) => {
         makeProfileUpdateRequest('https://example.com/user', {
             body: { lastName, address },
-            mehod: "PUT"
+            method: "PUT",
             errorMessage: "An error occur updating your profile"
         });
         // The request payload would be a FormData.
@@ -150,11 +154,11 @@ The `useRequest` hook provides the request metadata which are:
 `useRequest` also accepts an optional parameters, which allows the following properties:
 | Properties | Description | 
 |  ---  |  ---  |
-|  name  | The name of the request. This should be a unique identifier, different from any other name given to other request in your application. It is used to retrieve request data stoared in the application `state`, `localStorage` or `sessionStorage`.  |
+|  name  | The name of the request. This should be a unique identifier, different from any other name given to other request in your application. It is used to retrieve request data stored in the application `state`, `localStorage` or `sessionStorage`.  |
 |  baseUrl | The base URL of requests made by the `makeRequest` function. `makeRequest` can be provided with path instead of absolute url, if the `baseUrl` is assigned a value.  |
-|  onSuccess  | A callback function is called when the request succeeds. The request's response data is passed down to it. The callback can be used to perform required operations when the request succeeds.  |
-|  onError  | A callback function is called when the request fails. The request's response error body is passed down to it. The callback can be used to perform required operations when the request fails.  |
-| interceptors  | This allow request to be intercepted before the call is being made or the response, before they are being passed to the component state. It allows two optional function parameters, which are `response` and `request`. See more about [intercpetors]()  |
+|  onSuccess  | A callback function that is called when the request succeeds. The request's response data is passed down to it. The callback can be used to perform any required operations when the request succeeds.  |
+|  onError  | A callback function that is called when the request fails. The request's response error body is passed down to it. The callback can be used to perform any required operations when the request fails.  |
+| interceptors  | This allow request to be intercepted at the component level before the call is being made or  before the response are being passed to the component state. It allows two optional function parameters, which are `response` and `request`. See more about [intercpetors]()  |
 |  localStorage | A `Boolean` value that determines if the request's response data should be stored in local storage. The stored value can be retrieved from any part of the application using the `useRequestData` with the `name` property.  |
 | sessionStorage | A `Boolean` value that determines if the request's response data should be stored in session storage. The stored value can be retrieved from any part of the application using the `useRequestData` with the `name` property.  |
 |  memoryStorage  | A `Boolean` value that determines if the request's response data should be stored in the application memory(state). A browser refresh would cause the data stored to be lost, except the request is made again. The stored value can be retrieved from any part of the application using the `useRequestData` with the `name` property.  |
@@ -195,6 +199,8 @@ const App = () => {
     const [{loading}, makeActivitiesRequest] = useRequest({
         baseUrl: 'https://example.com',
         interceptors: {
+            // Do anything before sending the request, including updating the  request headers, body,
+            //method, query parameters and url.
             request: (payload) => ({
                 ...payload,
                 headers: {
@@ -211,3 +217,16 @@ const App = () => {
     ...
 }
 ```
+## Request Provider
+The request provider provides a powerful means of managing/configuring all application request from a single point, such as intercepting & updating all requests, displaying error and success toast, setting loaders to be displayed for all requests, setting baseUrl and using path at every other point in your application and many more. It should ideally be the parent component to every other component making use of the `useRequest()` in your application. The properties table below shows all properties that can be assigned to the request provider
+### Properties
+|  Property  |  Description  | Default  |
+| --- | --- | --- |
+| authToken |  Header authorization token. If provided it adds an Authorization bearer token to request's header. To exempt any request, set the `bearer` property of `makeRequest` to false  |    | 
+| baseUrl | Base url that would be prepend to relative path passed to `makeRequest` function. `baseUrl` set in `useRequest` takes precedence over this. If an absolute url is provided to `makeRequest`, it overrides the base URL. |  |
+| requestTimeout | Allowed duration in `milliseconds` for all request within the applications. When request duration exceeds this value, the request will be aborted. `timeout` set in `makeRequest` takes precedence over this. | ∞ |
+| onSuccess | A callback function that is called when any request within the application succeeds. The request's response data is passed down to it. The callback can be used to perform any form of operations at the app level, such as showing success toast. A popup/toast component can be returned to be rendered on request success.  |  |
+| onError | A callback function that is called when any request within the application fails. The error data is passed down to it. The callback can be used to perform any form of operations at the app level, such as showing error toast or rerouting on `401` error status code. A popup/toast component can be returned to be rendered on request error. | |
+| onLoading | A callback function that is called when any request loading state changes. A loader component can be returned to be rendered when loading is `true`. |  |
+| popupTimeout | Display timeout in `seconds` for error or success popup returned in onError or onSuccess callback respectively. | `8s` |
+| interceptors  | This allow request to be intercepted at the app level before the call is being made or  before the response are being passed to the component state. It allows two optional function parameters, which are `response` and `request`. See more about [intercpetors]()  |  |
