@@ -8,7 +8,7 @@
         - [Form Data Request](#form-data-request)
         - [Other Request Methods](#other-request-methods)
 - [useRequest](#useRequest)
-    - [Parameters]()
+    - [Parameter Properties](#parameter-properties)
     - [Usage Examples]()
 - [Request Provider](#request-provider)
     - [Properties]()
@@ -64,7 +64,7 @@ const [{}, makeRequest] = useRequest();
 | headers  | Request headers. If the headers property as passed to the headers `append` it append it to any generated headers by the library otherwise it will override any generated header |   | 
 | query  | Request query parameters. It adds any assigned value the request url as query parameters |   |
 
-### Usage Example
+### Usage Examples
 ### GET
 ```jsx
 import React from 'react';
@@ -79,13 +79,12 @@ const App = () => {
             query: { page: 1, pageSize: 20 },
             retries: 3,
         });
-        // No need to explicitly passed the method. GET method is assumed if no body.
+        // No need to explicitly passed the method. GET method is assumed if no body is passed.
     }, [])
 }
 ```
 ### POST
 ```jsx
-import React from 'react';
 import { useRequest } from 'react-http-query';
 
 const App = () => {
@@ -96,13 +95,12 @@ const App = () => {
             body: { username, password },
             timeout: 5000 // 5 secs
         });
-        // No need to explicitly passed the method. POST method is assumed there is a body.
+        // No need to explicitly passed the method. POST method is assumed when there is a body.
     }
 }
 ```
 ### Form Data Request
 ```jsx
-import React from 'react';
 import { useRequest } from 'react-http-query';
 
 const App = () => {
@@ -137,13 +135,79 @@ const App = () => {
 }
 ```
 ## useRequest
+```jsx
+const [{data, loading, success, error, message}, makeRequest] = useRequest();
+```
 The `useRequest` hook provides the request metadata which are:
 - Request state
     - data: The request returned data.
     - loading: `Boolean` value indicating whether the request is ongoing.
     - success: `Boolean` value indicating if the request succeeded.
-    - error: `Boolean` value indicating if tthe request failed.
+    - error: `Boolean` value indicating if the request failed.
     - message: `String` either the error or success message that could be retrieve from the request.
 - makeRequest: The function used to initiate the request.
+### Parameter Properties
+`useRequest` also accepts an optional parameters, which allows the following properties:
+| Properties | Description | 
+|  ---  |  ---  |
+|  name  | The name of the request. This should be a unique identifier, different from any other name given to other request in your application. It is used to retrieve request data stoared in the application `state`, `localStorage` or `sessionStorage`.  |
+|  baseUrl | The base URL of requests made by the `makeRequest` function. `makeRequest` can be provided with path instead of absolute url, if the `baseUrl` is assigned a value.  |
+|  onSuccess  | A callback function is called when the request succeeds. The request's response data is passed down to it. The callback can be used to perform required operations when the request succeeds.  |
+|  onError  | A callback function is called when the request fails. The request's response error body is passed down to it. The callback can be used to perform required operations when the request fails.  |
+| interceptors  | This allow request to be intercepted before the call is being made or the response, before they are being passed to the component state. It allows two optional function parameters, which are `response` and `request`. See more about [intercpetors]()  |
+|  localStorage | A `Boolean` value that determines if the request's response data should be stored in local storage. The stored value can be retrieved from any part of the application using the `useRequestData` with the `name` property.  |
+| sessionStorage | A `Boolean` value that determines if the request's response data should be stored in session storage. The stored value can be retrieved from any part of the application using the `useRequestData` with the `name` property.  |
+|  memoryStorage  | A `Boolean` value that determines if the request's response data should be stored in the application memory(state). A browser refresh would cause the data stored to be lost, except the request is made again. The stored value can be retrieved from any part of the application using the `useRequestData` with the `name` property.  |
+### Usage Examples
+```jsx
+import { useRequest } from 'react-http-query';
 
+const App = () => {
+    const [enableButton, setEnableButton] = useState(true);
+    const [{loading}, makeLoginRequest] = useRequest({
+        name: 'user-profile',
+        baseUrl: 'https://example.com',
+        onSuccess: (response) => {
+            navigate(`/dashboard/${response.data.id}`);
+        },
+        onError: (error) => {
+            showToast(error.message);
+            setEnableButton(true);
+        },
+        localStorage: true,
+    });
 
+    const onSubmitButtonClick = ({username, password}) => {
+        setEnableButton(false);
+        makeLoginRequest('/user/login', {
+            body: { username, password },
+            successMessage: "Login Successful!"
+        });
+    }
+    ...
+}
+```
+Interceptor example.
+```jsx
+import { useRequest } from 'react-http-query';
+
+const App = () => {
+    const [{loading}, makeActivitiesRequest] = useRequest({
+        baseUrl: 'https://example.com',
+        interceptors: {
+            request: (payload) => ({
+                ...payload,
+                headers: {
+                    ...payload.headers,
+                    Authorization: `Bearer ${authToken}`
+                }
+            })
+        }
+    });
+
+    const onFetchActivities = () => {
+        makeActivitiesRequest('/user/activities');
+    }
+    ...
+}
+```
