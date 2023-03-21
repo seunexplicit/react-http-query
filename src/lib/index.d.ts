@@ -75,8 +75,8 @@ export interface RequestProviderProps {
     /** Request delay duration `(in ms)` before cancelling request */
     requestTimeout?: number;
     /** 
-     * Base url that would be append to path for every request. 
-     * If an absolute url is provider, base url would not be append to it. 
+     * Base url that would be prepend to relative path passed to `makeRequest` function. 
+     * If an absolute url is provided to `makeRequest`, it overrides the base URL. 
      */
     baseUrl: string;
     children?: React.ReactNode;
