@@ -230,3 +230,70 @@ The request provider provides a powerful means of managing/configuring all appli
 | onLoading | A callback function that is called when any request loading state changes. A loader component can be returned to be rendered when loading is `true`. |  |
 | popupTimeout | Display timeout in `seconds` for error or success popup returned in onError or onSuccess callback respectively. | `8s` |
 | interceptors  | This allow request to be intercepted at the app level before the call is being made or  before the response are being passed to the component state. It allows two optional function parameters, which are `response` and `request`. See more about [intercpetors]()  |  |
+### Usage Examples
+```js
+import React from 'react';
+import { useRequest, RequestProvider } from 'react-http-query';
+
+const Profile = () => {
+    const [{ data, loading }, makeRequest] = useRequest();
+
+    React.useEffect(() => {
+        // The baseUrl set in the RequestProvider would be prepend to the path of this request
+        makeRequest('/profile');
+    }, [])
+
+    return (
+        <>
+            { !loading && data 
+                && <div>
+                    <div>{data.user.name}</div>
+                    <div>{data.user.age}</div>
+                </div>
+            }
+        </>   
+    )
+}
+
+const App = () => {
+
+    return (
+        {/* The RequestProvider can be implemented in a separate file and then use in your
+          * App component. This so you will separate the concerns of the request configuration and
+          * keep your app.js file clean. 
+          */
+         }
+        <RequestProvider
+            baseUrl="https://www.example.com"
+            authToken={authToken}
+            onError={(error) => {
+                return <Toast message={error.message} />
+            }}
+            interceptors={{
+                request: (payload) => ({
+                    ...payload,
+                    headers: {
+                        ...payload.headers
+                        // All request from the application would have this `csfrToken` on the request header
+                        "x-csfr-token": csfrToken
+                    }
+                }),
+                response: (payload) => {
+                    // Action could be performed base on the request status, like navigating to the login page on invalid authentication
+                    // error response.
+                    if (payload.status === 401) {
+                        navigate('/login');
+                    }
+                }
+            }}
+            // Timeout in `seconds` to show toast messages if provided.
+            popupTimeout={10}
+            // Request abort timeout in `milliseconds` if request duration exceeds the set `requestTimeout`
+            requestTimeout={10000}
+            >
+            <Profile />
+        </RequestProvider>
+    )
+}
+```
+
