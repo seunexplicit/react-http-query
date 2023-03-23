@@ -382,3 +382,96 @@ const ThirdCall = () => {
 }
 ```
 ## Interceptors
+Interceptors are means to intercept requests, perform actions based on the request payload or update the request payload and intercept responses and perform given actions based on the response payload.
+Interceptors can be added to `RequestProvider` which is the app level interceptor, as it intercept all requests call within the application. Interceptors can also be added to `useRequest`, this only intercept the requests call made with the `makeRequest` function derived from the `useRequest`.
+When interceptor is provided both at the app level and also to `useRequest`, payload goes through the app level interceptor before getting to the `useRequest` interceptor. An update made to the payload at the app level interceptor would be available in the payload at the `useRequest` interceptor.
+### Request
+Request interceptor intercept outgoing requests.
+```js
+const App = () => {
+    return (
+        <RequestProvider
+            baseUrl="https://www.example.com"
+            interceptors={{
+                request: (payload) => {
+                    // Below are all the properties of the request interceptor payload.
+                    // payload.headers
+                    // payload.body
+                    // payload.url
+                    // payload.method
+                    // payload.queryParam
+                    return {
+                        ...payload,
+                        headers: {
+                            ...payload.headers
+                            "x-request-id": "1234"
+                        }
+                    }
+                }
+            }}
+        >
+            <Profile />
+        </RequestProvider>
+    )
+}
+
+
+const Profile = () => {
+    const [{}, makeRequest] = useRequest({
+        interceptors: {
+            request: (payload) => {
+                // The information added at the app level interceptor would be available in this 
+                // interceptor. It's set value can be overwritten.
+                console.log(payload.headers["x-request-id"]) // 123
+                delete payload.headers["x-request-id"];
+                return payload
+            }
+        }
+    })
+}
+```
+### Response
+Response interceptor intercept incoming responses.
+```js
+const App = () => {
+    return (
+        <RequestProvider
+            baseUrl="https://www.example.com"
+            interceptors={{
+                response: (payload) => {
+                    // Below are all the properties of the response interceptor payload.
+                    // payload.data
+                    // payload.status
+                    // payload.url
+                    // payload.method
+                    // payload.queryParam
+
+                    // Only the data properties can be updated. Other properties are read-only.
+                    return {
+                        ...payload,
+                        data: {
+                            ...payload.data,
+                            url: payload.url
+                        }
+                    }
+                }
+            }}
+        >
+            <Profile />
+        </RequestProvider>
+    )
+}
+
+
+const Profile = () => {
+    const [{}, makeRequest] = useRequest({
+        interceptors: {
+            response: (payload) => {
+                // The information added at the app level interceptor would be available in this 
+                // interceptor
+                console.log(payload.data.url) // prints the url added at the app level interceptor.
+            }
+        }
+    })
+}
+```

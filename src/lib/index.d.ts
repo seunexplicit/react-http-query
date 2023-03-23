@@ -3,7 +3,7 @@ export type RequestHeader = Record<string, string> | { append: Record<string, st
 type RequestMethod = "GET" | "HEAD" | "OPTIONS" | "POST" | "DELETE" | "PUT" | "PATCH";
 
 export interface InterceptorPayload {
-    headers: Record<string, string>,
+    headers: Record<string, any>,
     body?: Record<string | unknown> | BodyInit,
     method: RequestMethod,
     url: string,
