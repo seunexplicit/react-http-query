@@ -5,6 +5,7 @@
     "name": "Olusanya Timothy",
     "email": "seunxplicit@gmail.com"
   },
+  "keywords": ["fetch", "query", "http", "request", "react"],
   "repository": {
     "url": "https://github.com/seunexplicit/react-http-query.git",
     "type": "git"
