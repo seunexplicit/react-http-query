@@ -52,7 +52,6 @@ export const RequestProvider: React.FC<RequestProviderProps> = ({children, ...pr
     }
 
     function dispatchLoadingState(state: boolean) {
-        console.log({ state })
         setLoading(state);
         const loader = prop?.onLoading?.(state) ?? undefined;
         setLoaderComponent(state ? loader : undefined);

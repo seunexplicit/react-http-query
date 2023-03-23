@@ -2,20 +2,24 @@
 - [Simple Usage](#simple-usage)
 - [makeRequest](#makeRequest)
     - [Configurations]()
-    - [Usage Examples]()
+    - [Usage Examples](#usage-examples)
         - [GET](#get)
         - [POST](#post)
         - [Form Data Request](#form-data-request)
         - [Other Request Methods](#other-request-methods)
 - [useRequest](#useRequest)
     - [Parameter Properties](#parameter-properties)
-    - [Usage Examples]()
+    - [Usage Examples](#usage-examples-1)
 - [Request Provider](#request-provider)
     - [Properties](#properties)
-    - [Usage Examples]()
+    - [Usage Examples](#usage-examples-2)
+- [Request Context](#request-context)
 - [useRequestData](#useRequestData)
-    - [Parameters]()
-    - [Usage Examples]()
+    - [Parameters](#parameters)
+    - [Usage Examples](#usage-examples-3)
+- [Interceptors](#interceptors)
+    - [Request](#request)
+    - [Response](#response)
 
 ## Simple Usage
 ```jsx
@@ -290,10 +294,91 @@ const App = () => {
             popupTimeout={10}
             // Request abort timeout in `milliseconds` if request duration exceeds the set `requestTimeout`
             requestTimeout={10000}
-            >
+        >
             <Profile />
         </RequestProvider>
     )
 }
 ```
+## Request Context
+The `RequestContext` must be used along side the `RequestProvider`, it give access to the following properties:
+- `loading`: Get loading state of requests from any component within the application.
+- `baseUrl`: Get the current base URL that is being used for request.
+- `setAuthToken`: Set the Authorization bearer token to be used for all requests. This could be after the user must have login to the application.
+- `setBaseUrl`: Set the base URL to be used for all requests.
+```js
+const { loading, baseUrl, setAuthToken, setBaseUrl } = useContext(RequestContext);
 
+setAuthToken(authToken);
+```
+## useRequestData
+`useRequestData` is used to retrieve data save to the `localStorage`, `sessionStorage`, or `memoryStorage` using the assigned name. It allows two arguments
+| Argument | Description | Allowed Values | Required |
+| --- | --- | --- | --- |
+| name | The assigned request name. | `string` | yes |
+| storageLocation | The location specified for the data to be stored. If not provided, it checkes through all locations. If provided, it checks only the location and if not found, it returns `undefined` | `memory` \| `session` \| `local` | no |
+
+### Usage Examples
+```js
+...
+import { useRequest, RequestContext, useRequestData } from 'react-http-query';
+
+const Login = () => {
+    const [{}, makeLoginRequest] = useRequest({ 
+        name: "user-profile", 
+        localStorage: true,
+        interceptors: {
+            // The interceptor is to ensure only the user information is saved to the local storage,
+            // rather than saving all information coming from the server, which could includes statusCode, successMessage, etc.
+            response: (payload) => ({
+                ...payload,
+                data: payload.data?.data
+            })
+        } 
+    })
+    ...
+}
+
+const Dashboard = () => {
+    const userProfile = useRequestData("user-profile", "local");
+    const { setAuthToken } = useContext(RequestContext);
+
+    React.useEffect(() => {
+        setAuthToken(userProfile?.token);
+    }, [setAuthToken, userProfile?.token])
+    ...
+}
+```
+`useRequestData` is not the only means of retrieving saved data. When data are saved to either the `memoryStorage`, `sessionStorage`, or `localStorage` and another request is made to the same endpoint, a check will be made to see if there is an existing saved data, if there is it returns the saved data, otherwise it makes another round of request. A new request will be made if there is a change in the query parameters or `forceRefetch` is set to `true` in the `makeRequest` config. This is especially useful for static data, such as list of countries, etc. as it reduces the number of server call.
+```js
+const FirstCall = () => {
+    [{}, makeCountryLookupRequest] = useRequest({ memoryStorage: true });
+
+    React.useEffect(() => {
+        // Request gets to the sever, as this is the first call.
+        makeCountryLookupRequest('/lookup/countries');
+    }, [])
+}
+
+const SecondCall = () => {
+    // It is important to still set memoryStorage to true, on subsequent requests
+    // This would ensure that the response are cached as well, if another call is made to the server.
+    [{}, makeCountryLookupRequest] = useRequest({ memoryStorage: true });
+
+    React.useEffect(() => {
+        // Request will not get to the server, saved data from the memory would be retrieved.
+        // Response time would be faster than first call.
+        makeCountryLookupRequest('/lookup/countries');
+    }, [])
+}
+
+const ThirdCall = () => {
+    [{}, makeCountryLookupRequest] = useRequest({ memoryStorage: true });
+
+    React.useEffect(() => {
+        // Request gets to the sever, because `forceRefetch` is set to `true`
+        makeCountryLookupRequest('/lookup/countries', { forceRefetch: true });
+    }, [])
+}
+```
+## Interceptors
