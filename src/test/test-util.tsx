@@ -1,6 +1,6 @@
 import React from 'react'
-import { RequestProvider } from '../lib'
-import { RequestProviderProps } from '../lib/index.d'
+import { RequestProvider, useRequest, useRequestConfig, useRequestData } from '../lib'
+import { RequestProviderProps, StorageType } from '../lib/index.d'
 
 export const RequestWrapper = (props: Omit<RequestProviderProps, 'children'>) => 
   ({children}: {children: React.ReactNode}) => {
@@ -11,6 +11,31 @@ export const RequestWrapper = (props: Omit<RequestProviderProps, 'children'>) =>
     )
   }
 
+export const UseRequestDataWrapper = ({ storage, name, lookupStorage, lookupName }: {
+  name: string,
+  lookupName: string, 
+  storage?: StorageType,
+  lookupStorage?: StorageType,
+}) => {
+  const [, makeRequest ] = useRequest({
+    name,
+    ...(storage === 'session' && { sessionStorage: true }),
+    ...(storage === 'local' && { localStorage: true }),
+    ...(storage === 'memory' && { memoryStorage: true })
+  });
+
+  const saveData = useRequestData(lookupName, lookupStorage);
+
+  return [ saveData, makeRequest ]
+}
+
+export const UseRequestConfigWrapper = () => {
+  const [, makeRequest ] = useRequest();
+  const config = useRequestConfig();
+
+  return [ config, makeRequest ]
+}
+
 
 export const MessagePopup = ({ message }: any) => (<div 
   style={{position: 'absolute'}}>
@@ -18,6 +43,7 @@ export const MessagePopup = ({ message }: any) => (<div
 </div>)
 
 export const __STORAGE_NAME_PREFIX__ = 'react-http-request';
+export const __MOCK_AUTH_TOKEN__ = 'Thjc+lxXA+RKk1WL5r0ZXQ==';
 
 export const __MOCK_DATA__ = {
   body: { 
@@ -71,8 +97,7 @@ export const mockWindowProperty = (property: string | any, value: any) => {
 export const delay = (time: number) => {
   return new Promise((resolve, ) => {
     setTimeout(() => {
-      console.log({ time, resolve })
-      resolve('')
+      resolve(null)
     }, time);
   });
 }

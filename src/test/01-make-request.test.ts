@@ -94,6 +94,7 @@ describe('makeRequest', () => {
         
         expect(fetch).toBeCalled()
         expect(mockedFetch.mock.calls[0][1]?.body instanceof FormData).toBe(true);
+        expect((mockedFetch.mock.calls[0][1]?.body as any)?.get('data')).toBe("form-data");
         expect((mockedFetch.mock.calls[0][1]?.headers as any)['Content-Type']).toBeUndefined();
     });
 

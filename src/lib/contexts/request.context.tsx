@@ -1,21 +1,11 @@
 import { createContext, useState } from 'react';
-import { RequestContextProps, RequestProviderProps } from '../index.d';
+import { RequestProviderProps } from '../index.d';
 import { MemoryStorageProvider } from './memory-storage.context';
 import { PrivateProvider } from './private.context';
 
 const __DEFAULT_POPUP_TIMEOUT__ = 8;
-const OUT_OF_REQUEST_CONTEXT_ERROR_MESSAGE = 'This method must be used within `react-http-query` `RequestContext`'
 
-const RequestContext = createContext<RequestContextProps>({
-    loading: false,
-    baseUrl: '', 
-    setAuthToken: () => { 
-        throw Error(OUT_OF_REQUEST_CONTEXT_ERROR_MESSAGE); 
-    },
-    setBaseUrl: () => { 
-        throw Error(OUT_OF_REQUEST_CONTEXT_ERROR_MESSAGE);
-    },  
-});
+const RequestContext = createContext({});
 
 export default RequestContext;
 
@@ -66,13 +56,19 @@ export const RequestProvider: React.FC<RequestProviderProps> = ({children, ...pr
             loading,
         }}>
         <MemoryStorageProvider>
-            <PrivateProvider 
+            <PrivateProvider
+                loading={loading} 
+                baseUrl={baseUrl}
+                authToken={authToken}
+                setBaseUrl={setBaseUrl}
+                setAuthToken={setAuthToken}
+                requestTimeout={prop?.requestTimeout}
                 dispatchLoadingState={dispatchLoadingState} 
-                dispatchSuccessRequest={dispatchSuccessRequest}
                 dispatchErrorRequest={dispatchErrorRequest}
+                dispatchSuccessRequest={dispatchSuccessRequest}
                 requestInterceptor={prop?.interceptors?.request}
                 responseInterceptor={prop?.interceptors?.response}
-                requestTimeout={prop?.requestTimeout}>
+            >
                 <>
                     {errorPopup && errorPopup}
                     {successPopup && successPopup}

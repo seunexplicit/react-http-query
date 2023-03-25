@@ -2,7 +2,6 @@ import createFormData from '../helpers/create-form-data';
 import MemoryStorageContext from '../contexts/memory-storage.context';
 import objectDeepEqual from '../helpers/object-deep-equal';
 import PrivateContext from '../contexts/private.context';
-import RequestContext from '../contexts/request.context';
 import {
     BodyRequestPayload,
     FormDataRequestPayload,
@@ -41,13 +40,14 @@ export const useRequest = <T = Record<string, unknown> | null, E = unknown>(
     ((url: string, config?: GetRequestPayload | BodyRequestPayload | FormDataRequestPayload) => Promise<T | E | null>)
 ] => {
     const [state, setState] = useState<IResponse<T, E>>({ ...initialState });
-    const { baseUrl, authToken } = useContext(RequestContext);
     const retryCount = useRef(1);
     const requestUrlRef = useRef<string>();
-    const { 
-        dispatchLoadingState,
+    const {
+        baseUrl,
+        authToken, 
         requestTimeout, 
         dispatchErrorRequest,
+        dispatchLoadingState,
         dispatchSuccessRequest,
         requestInterceptor: appLevelRequestInterceptor, 
         responseInterceptor: appLevelResponseInterceptor, 
@@ -113,9 +113,9 @@ export const useRequest = <T = Record<string, unknown> | null, E = unknown>(
 
                 let responsePayload = Object.defineProperties({}, {
                     url: getEnumerableProperties(payload.url),
-                    data: getEnumerableProperties(responseBody, true),
                     method: getEnumerableProperties(payload.method),
                     status: getEnumerableProperties(response.status),
+                    data: getEnumerableProperties(responseBody, true),
                     queryParams: getEnumerableProperties(payload.queryParams)
                 }) as InterceptorResponsePayload;
 
@@ -138,7 +138,7 @@ export const useRequest = <T = Record<string, unknown> | null, E = unknown>(
                     if (sessionStorage) saveValueToSession(valueToStore);
                     if (localStorage) saveValueToLocalStorage(valueToStore);
 
-                    setRequestUpdate?.((initialValue) => initialValue++);
+                    setRequestUpdate?.((initialValue) => ++initialValue );
                     dispatchSuccessRequest?.(responsePayload.data);
                     setState(newState);
                     props?.onSuccess?.(responsePayload.data as T);
