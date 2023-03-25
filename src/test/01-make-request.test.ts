@@ -48,7 +48,7 @@ describe('makeRequest', () => {
         expect(fetch).toBeCalled()
     });
 
-    test('should make a get request when no method and no body is passed', async () => {
+    test('should make a get request when no method and body is passed', async () => {
         const { result } = renderHook(useRequest, {
             initialProps: {}
         });
@@ -60,7 +60,7 @@ describe('makeRequest', () => {
         expect(mockedFetch.mock.calls[0][1]?.method).toBe('GET');
     });
 
-    test('should make a post request when body is passed and no method is passed', async () => {
+    test('should make a post request when body is passed but no method is passed', async () => {
         const { result } = renderHook(useRequest, {
             initialProps: {}
         });
@@ -72,7 +72,7 @@ describe('makeRequest', () => {
         expect(mockedFetch.mock.calls[0][1]?.method).toBe('POST');
     });
 
-    test('should make a request with the specified method', async () => {
+    test('should make a request with the specified method passed', async () => {
         const { result } = renderHook(useRequest, {
             initialProps: {}
         });
@@ -131,7 +131,7 @@ describe('makeRequest', () => {
             .toBe(additionalHeaderProps['x-append']);
     });
 
-    test('should override header properties when properties passed to header', async () => {
+    test('should override header properties when properties are passed to header', async () => {
         const { result } = renderHook(useRequest, {
             initialProps: {}
         });
@@ -150,7 +150,7 @@ describe('makeRequest', () => {
             .toBe(header['x-override']);
     });
 
-    test('should throw error when request duration exceed passed timeout', async () => {
+    test('should throw error when request duration exceed the timeout passed', async () => {
         mockedFetch.mockResponseOnce(async () => {
             jest.advanceTimersByTime(60)
             return {}
@@ -168,7 +168,7 @@ describe('makeRequest', () => {
         expect(mockedFetch).toBeCalled();
     });
 
-    test('should be successful when request duration is less than passed timeout', async () => {
+    test('should be successful when request duration is less than the timeout passed', async () => {
         mockedFetch.mockResponseOnce(async () => {
             jest.advanceTimersByTime(50)
             return JSON.stringify(__MOCK_DATA__)
