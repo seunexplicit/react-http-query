@@ -1,13 +1,7 @@
-import { createContext, useState } from "react";
+import { createContext, useState } from 'react';
+import { MemoryStorageContextProps, StoredValue } from '../index.d';
 
-interface MemoryStorageContextProps {
-    setStoredData?: React.Dispatch<React.SetStateAction<Record<string, any>>>;
-    storedData?: Record<string, any>;
-    setRequestUpdate?: React.Dispatch<React.SetStateAction<number>>;
-    requestUpdate?: number;   
-}
-
-const MemoryStorageContext = createContext<MemoryStorageContextProps>({});
+const MemoryStorageContext = createContext<MemoryStorageContextProps<unknown>>({ storedData: {} });
 
 export default MemoryStorageContext;
 
@@ -15,19 +9,20 @@ interface MemoryStorageProviderProps {
     children: JSX.Element;
 }
 
-export const MemoryStorageProvider: React.FC<MemoryStorageProviderProps>  = ({children}) => {
-    const [ storedData, setStoredData ] = useState<Record<string, any>>();
-    const [ requestUpdate, setRequestUpdate ] = useState<number>(0);
+export const MemoryStorageProvider: React.FC<MemoryStorageProviderProps> = ({ children }) => {
+    const [storedData, setStoredData] = useState<Record<string, StoredValue<unknown> | undefined>>({});
+    const [requestUpdate, setRequestUpdate] = useState<number>(0);
 
     return (
-        <MemoryStorageContext.Provider 
+        <MemoryStorageContext.Provider
             value={{
-                storedData, 
-                requestUpdate, 
-                setRequestUpdate, 
-                setStoredData
-                }}>
+                storedData,
+                requestUpdate,
+                setRequestUpdate,
+                setStoredData,
+            }}
+        >
             {children}
         </MemoryStorageContext.Provider>
     );
-}
+};
