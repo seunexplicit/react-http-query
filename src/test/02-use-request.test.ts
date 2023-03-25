@@ -202,7 +202,7 @@ describe('useRequest', () => {
             },
         } = renderHook(() => useRequest({ baseUrl }));
 
-        await act(() => makeRequest(GOOD_URL, { useBaseUrl: true }));
+        await act(() => makeRequest(GOOD_URL, { isRelative: true }));
 
         expect(fetchMock.mock.calls[0][0]).toBe(`${baseUrl}${GOOD_URL}`);
     });
