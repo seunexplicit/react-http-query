@@ -5,28 +5,28 @@
  * @returns
  */
 const createFormData = (payload: Record<string, any>) => {
-    return Object.keys(payload).reduce((previousValue, currentValue) => {
-        if (payload[currentValue] instanceof FileList) {
-            for (let count = 0; count < payload[currentValue].length; count++) {
-                previousValue.append(currentValue, payload[currentValue].item(count));
-            }
-        }
-        else if (typeof payload[currentValue] === 'object') {
-            return addObjectToFormData(previousValue, payload[currentValue], currentValue);
-        }
-        else previousValue.append(currentValue, payload[currentValue]);
-        return previousValue;
-    }, new FormData());
+    const formData = new FormData();
+    addObjectToFormData(formData, payload);
+    return formData;
 };
 
-const addObjectToFormData = (formData: FormData, payload: any, name: string) => {
+const addObjectToFormData = (formData: FormData, payload: any, name?: string) => {
     Object.entries(payload).forEach(([key, value]) => {
-        if (typeof value === 'object') {
-            formData = addObjectToFormData(formData, value, `${name}[${key}]`)
-        }
-        else formData.append(`${name}[${key}]`, value as any);
+        const valuekey = name ? `${name}[${key}]` : key;
+        value instanceof FileList 
+            ? appendFileListToFormData(formData, value, valuekey)
+            : value instanceof File || value instanceof Blob 
+            ? formData.append(valuekey, value as any)
+            : typeof value === 'object'
+            ? addObjectToFormData(formData, value, valuekey)
+            : formData.append(valuekey, value as any);
     });
-    return formData
+}
+
+const appendFileListToFormData = (formData: FormData, fileList: FileList, name: string) => {
+    for (let count = 0; count < fileList.length; count++) {
+       formData.append(name, fileList.item(count) as any);
+    }
 }
 
 export default createFormData;

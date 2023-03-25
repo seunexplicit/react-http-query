@@ -17,7 +17,7 @@ interface MemoryStorageProviderProps {
 
 export const MemoryStorageProvider: React.FC<MemoryStorageProviderProps>  = ({children}) => {
     const [ storedData, setStoredData ] = useState<Record<string, any>>();
-    const [requestUpdate, setRequestUpdate] = useState<number>(0);
+    const [ requestUpdate, setRequestUpdate ] = useState<number>(0);
 
     return (
         <MemoryStorageContext.Provider 

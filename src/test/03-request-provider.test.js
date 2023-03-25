@@ -1,4 +1,4 @@
-import { act, BAD_URL, screen, GOOD_URL, waitFor, MessagePopup, mockWindowProperty, renderHook, RequestWrapper, setupMockupRequest, __BAD_RESPONSE__, __MOCK_DATA__, delay } from "./test-util";
+import { act, BAD_URL, screen, GOOD_URL, waitFor, MessagePopup, mockWindowProperty, renderHook, RequestWrapper, setupMockupRequest, __BAD_RESPONSE__, __MOCK_DATA__, delay, __MOCK_AUTH_TOKEN__ } from "./test-util";
 import fetchMock from "jest-fetch-mock";
 import { useRequest } from "../lib";
 import StorageMock from "./mock-storage";
@@ -51,17 +51,16 @@ describe(`RequestProvider`, () => {
 
     test('should add Authorization prop to header when `authToken` is passed to `RequestProvider`', async () => {
         const providerUrl = 'http://provider.com/';
-        const authToken = 'yUI09HJklhngJJKjhdhdg/aliyEb'; 
 
         const { result: { current: [, makeRequest] } } = renderHook(
             () => useRequest(), 
-            { wrapper: RequestWrapper({ baseUrl: providerUrl, authToken })}
+            { wrapper: RequestWrapper({ baseUrl: providerUrl, authToken: __MOCK_AUTH_TOKEN__ })}
         );
 
         await act(() => makeRequest('/request/path'));
         
         expect((fetchMock.mock.calls[0][1]?.headers)['Authorization'])
-            .toBe(`Bearer ${authToken}`);
+            .toBe(`Bearer ${__MOCK_AUTH_TOKEN__}`);
     });
 
     test('should intercept and update request properties', async () => {
@@ -97,7 +96,7 @@ describe(`RequestProvider`, () => {
             'x-csrf-token': 'Uihdhapx84akjf' 
         };
         const componentLevelQueryInterceptor = { pageSize: 20 };
-        const componentLevelHeaderInterceptor = {'x-append-token': 'uiJkuaD2pqm89/hyUisnaK'}
+        const componentLevelHeaderInterceptor = {'x-append-token': __MOCK_AUTH_TOKEN__}
 
         const { result: { current: [, makeRequest] } } = renderHook(
             () => useRequest({
@@ -297,12 +296,11 @@ describe(`RequestProvider`, () => {
     });
 
     test('should show loader component, if loader component is returned in loading callback', async () => {
-        jest.useRealTimers();
         const loadingMessage = "loading...";
         let loadingState = false;
 
         fetchMock.mockResponse(async () => {
-            await delay(40);
+            await delay(10);
             return {}
         });
 
@@ -316,14 +314,13 @@ describe(`RequestProvider`, () => {
                 }  
             })}
         );
- 
-        await act(() => makeRequest(''));
+
+        act(() => { makeRequest('') });
  
         expect(loadingState).toBe(true);
         expect(await screen.findByText(loadingMessage)).toBeInTheDocument();
 
-        jest.useFakeTimers()
-        jest.advanceTimersByTime(30);
+        jest.advanceTimersByTime(20);
 
         await waitFor(() => {
             expect(screen.queryByText(loadingMessage)).not.toBeInTheDocument()

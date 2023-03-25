@@ -162,7 +162,7 @@ The `useRequest` hook provides the request metadata which are:
 |  baseUrl | The base URL of requests made by the `makeRequest` function. `makeRequest` can be provided with path instead of absolute url, if the `baseUrl` is assigned a value.  |
 |  onSuccess  | A callback function that is called when the request succeeds. The request's response data is passed down to it. The callback can be used to perform any required operations when the request succeeds.  |
 |  onError  | A callback function that is called when the request fails. The request's response error body is passed down to it. The callback can be used to perform any required operations when the request fails.  |
-| interceptors  | This allow request to be intercepted at the component level before the call is being made or  before the response are being passed to the component state. It allows two optional function parameters, which are `response` and `request`. See more about [intercpetors]()  |
+| interceptors  | This allow request to be intercepted at the component level before the call is being made or  before the response are being passed to the component state. It allows two optional function parameters, which are `response` and `request`. See more about [intercpetors](#interceptors)  |
 |  localStorage | A `Boolean` value that determines if the request's response data should be stored in local storage. The stored value can be retrieved from any part of the application using the `useRequestData` with the `name` property.  |
 | sessionStorage | A `Boolean` value that determines if the request's response data should be stored in session storage. The stored value can be retrieved from any part of the application using the `useRequestData` with the `name` property.  |
 |  memoryStorage  | A `Boolean` value that determines if the request's response data should be stored in the application memory(state). A browser refresh would cause the data stored to be lost, except the request is made again. The stored value can be retrieved from any part of the application using the `useRequestData` with the `name` property.  |
@@ -233,7 +233,7 @@ The request provider provides a powerful means of managing/configuring all appli
 | onError | A callback function that is called when any request within the application fails. The error data is passed down to it. The callback can be used to perform any form of operations at the app level, such as showing error toast or rerouting on `401` error status code. A popup/toast component can be returned to be rendered on request error. | |
 | onLoading | A callback function that is called when any request loading state changes. A loader component can be returned to be rendered when loading is `true`. |  |
 | popupTimeout | Display timeout in `seconds` for error or success popup returned in onError or onSuccess callback respectively. | `8s` |
-| interceptors  | This allow request to be intercepted at the app level before the call is being made or  before the response are being passed to the component state. It allows two optional function parameters, which are `response` and `request`. See more about [intercpetors]()  |  |
+| interceptors  | This allow request to be intercepted at the app level before the call is being made or  before the response are being passed to the component state. It allows two optional function parameters, which are `response` and `request`. See more about [intercpetors](#interceptors)  |  |
 ### Usage Examples
 ```js
 import React from 'react';

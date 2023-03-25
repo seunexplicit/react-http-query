@@ -6,6 +6,7 @@ import {
     InterceptorPayload,
     RequestHeader
 } from '../index.d';
+
 /**
  * Checks if a string is an absolute url or a path
  * @param url String to check
@@ -27,7 +28,7 @@ export const isPath = (url: string): boolean => {
  * @param baseUrl Request base url
  * @returns {string}
  */
-export const generatePath = (path: string, baseUrl: string, useBaseUrl: boolean | undefined): string => {
+export const generatePath = (path: string, baseUrl: string | undefined, useBaseUrl: boolean | undefined): string => {
     return `${
         useBaseUrl === true && baseUrl 
             ? concatBasePath(path, baseUrl)
@@ -37,8 +38,8 @@ export const generatePath = (path: string, baseUrl: string, useBaseUrl: boolean 
     }`;
 };
 
-const concatBasePath = (path: string, baseUrl: string) => {
-    return (baseUrl.charAt(baseUrl.length - 1) === '/' ? baseUrl : `${baseUrl}/`)  
+const concatBasePath = (path: string, baseUrl: string | undefined) => {
+    return (baseUrl?.charAt(baseUrl?.length - 1) === '/' ? baseUrl : `${baseUrl}/`)  
         + (path.charAt(0) === '/' ? path.substring(1) : path);
 }
 
