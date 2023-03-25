@@ -73,7 +73,7 @@ export const useRequest = <T = Record<string, unknown> | null, E = unknown>(
                         ? 'POST'
                         : 'GET');
 
-                requestUrlRef.current = generatePath(path, props?.baseUrl || baseUrl, config?.useBaseUrl);
+                requestUrlRef.current = generatePath(path, props?.baseUrl || baseUrl, config?.isRelative);
 
                 // if response was cached return cached response.
                 if (!config?.forceRefetch) {

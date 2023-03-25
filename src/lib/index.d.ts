@@ -28,7 +28,7 @@ export interface RequestPayload extends RequestInit {
     retries?: number;
     bearer?: boolean;
     timeout?: number;
-    useBaseUrl?: boolean;
+    isRelative?: boolean;
     errorMessage?: string;
     forceRefetch?: boolean;
     header?: RequestHeader;

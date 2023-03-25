@@ -26,17 +26,18 @@ export const isPath = (url: string): boolean => {
  *
  * @param path Request path or url
  * @param baseUrl Request base url
+ * @param isRelative Detemine if path is relative path or absolute path
  * @returns {string}
  */
 export const generatePath = (
     path: string,
     baseUrl: string | undefined,
-    useBaseUrl: boolean | undefined
+    isRelative: boolean | undefined
 ): string => {
     return `${
-        useBaseUrl === true && baseUrl
+        isRelative === true && baseUrl
             ? concatBasePath(path, baseUrl)
-            : useBaseUrl === false || !isPath(path)
+            : isRelative === false || !isPath(path)
             ? path
             : concatBasePath(path, baseUrl)
     }`;
@@ -104,24 +105,26 @@ export const fetchRequest = (
     return fetch(`${payload.url}${queryBuilder(payload.queryParams)}`, {
         headers: payload.headers,
         method: payload.method,
-        signal: controller?.signal,
-        mode: config?.mode,
-        cache: config?.cache,
-        integrity: config?.integrity,
-        keepalive: config?.keepalive,
-        window: config?.window,
-        redirect: config?.redirect,
-        referrer: config?.referrer,
-        referrerPolicy: config?.referrerPolicy,
-        credentials: config?.credentials,
+        ...getProperty('mode', config),
+        ...getProperty('cache', config),
+        ...getProperty('window', config),
+        ...getProperty('redirect', config),
+        ...getProperty('referrer', config),
+        ...getProperty('integrity', config),
+        ...getProperty('keepalive', config),
+        ...getProperty('signal', controller),
+        ...getProperty('credentials', config),
+        ...getProperty('referrerPolicy', config),
         body:
-            payload.body instanceof FormData ||
-            payload.body instanceof URLSearchParams ||
             payload.body instanceof Blob ||
-            payload.body instanceof ArrayBuffer ||
+            typeof payload.body === 'string' ||
             ArrayBuffer.isView(payload.body) ||
-            typeof payload.body === 'string'
+            payload.body instanceof FormData ||
+            payload.body instanceof ArrayBuffer ||
+            payload.body instanceof URLSearchParams
                 ? payload.body
                 : payload.body && JSON.stringify(payload.body),
     });
 };
+
+const getProperty = (key: string, payload?: any) => payload?.[key] !== undefined && { [key]: payload[key] };
