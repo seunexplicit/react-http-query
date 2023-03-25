@@ -1,4 +1,4 @@
-import filterEmptyProperties from "./filter-empty-prop";
+import filterEmptyProperties from './filter-empty-prop';
 
 /**
  * Helper to concat query param object into a string
@@ -7,6 +7,7 @@ import filterEmptyProperties from "./filter-empty-prop";
  * @descriptions {searchText: 'value'} => ?searchText=value
  * @returns {string}
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const queryBuilder = (query?: Record<string, any>): string => {
     if (!query) return '';
 

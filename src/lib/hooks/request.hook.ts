@@ -8,21 +8,21 @@ import {
     GetRequestPayload,
     InterceptorResponsePayload,
     IResponse,
-    UseRequestProps
+    UseRequestProps,
 } from '../index.d';
 import {
     fetchRequest,
     generatePath,
     getRequestAbortter,
-    requestHeaderBuilder
+    requestHeaderBuilder,
 } from '../helpers/request.helper';
-import { retrieveStoredValue, saveValueToLocalStorage, saveValueToMemory, saveValueToSession } from '../helpers/stored-value-management';
 import {
-    useCallback,
-    useContext,
-    useRef,
-    useState
-} from 'react';
+    retrieveStoredValue,
+    saveValueToLocalStorage,
+    saveValueToMemory,
+    saveValueToSession,
+} from '../helpers/stored-value-management';
+import { useCallback, useContext, useRef, useState } from 'react';
 
 const initialState = {
     loading: false,
@@ -36,27 +36,33 @@ const initialState = {
 export const useRequest = <T = Record<string, unknown> | null, E = unknown>(
     props?: UseRequestProps<T, E>
 ): [
-    IResponse<T, E>, 
-    ((url: string, config?: GetRequestPayload | BodyRequestPayload | FormDataRequestPayload) => Promise<T | E | null>)
+    IResponse<T, E>,
+    (
+        url: string,
+        config?: GetRequestPayload | BodyRequestPayload | FormDataRequestPayload
+    ) => Promise<T | E | null>
 ] => {
     const [state, setState] = useState<IResponse<T, E>>({ ...initialState });
     const retryCount = useRef(1);
     const requestUrlRef = useRef<string>();
     const {
         baseUrl,
-        authToken, 
-        requestTimeout, 
+        authToken,
+        requestTimeout,
         dispatchErrorRequest,
         dispatchLoadingState,
         dispatchSuccessRequest,
-        requestInterceptor: appLevelRequestInterceptor, 
-        responseInterceptor: appLevelResponseInterceptor, 
+        requestInterceptor: appLevelRequestInterceptor,
+        responseInterceptor: appLevelResponseInterceptor,
     } = useContext(PrivateContext);
     const { setStoredData, storedData, setRequestUpdate } = useContext(MemoryStorageContext);
     const { localStorage, sessionStorage, memoryStorage, name, interceptors } = props || {};
 
     const makeRequest = useCallback(
-        async (path: string, config?: GetRequestPayload | BodyRequestPayload | FormDataRequestPayload): Promise<T | E | null> => {
+        async (
+            path: string,
+            config?: GetRequestPayload | BodyRequestPayload | FormDataRequestPayload
+        ): Promise<T | E | null> => {
             try {
                 dispatchLoadingState?.(true);
                 setState((prevState) => ({ ...prevState, loading: true }));
@@ -67,14 +73,14 @@ export const useRequest = <T = Record<string, unknown> | null, E = unknown>(
                         ? 'POST'
                         : 'GET');
 
-                requestUrlRef.current = generatePath(path, props?.baseUrl || baseUrl, config?.useBaseUrl);
+                requestUrlRef.current = generatePath(path, props?.baseUrl || baseUrl, config?.isRelative);
 
                 // if response was cached return cached response.
                 if (!config?.forceRefetch) {
                     const storedValue = retrieveStoredValue<T>(requestUrlRef.current, storedData, name);
                     if (storedValue && objectDeepEqual(storedValue.queryParam, config?.query)) {
                         dispatchLoadingState?.(false);
-                        setState((previousState) => 
+                        setState((previousState) =>
                             getSuccessState<T>(previousState, storedValue.data, config?.successMessage)
                         );
                         props?.onSuccess?.(storedValue.data);
@@ -84,7 +90,11 @@ export const useRequest = <T = Record<string, unknown> | null, E = unknown>(
 
                 let formData: FormData | undefined = undefined;
                 const payloadFormData = (config as FormDataRequestPayload)?.formData;
-                const [headers, overridesHeaders] = requestHeaderBuilder(config?.bearer ?? true, authToken, config?.header);
+                const [headers, overridesHeaders] = requestHeaderBuilder(
+                    config?.bearer ?? true,
+                    authToken,
+                    config?.header
+                );
 
                 if (payloadFormData) {
                     !overridesHeaders && delete headers['Content-Type'];
@@ -92,35 +102,41 @@ export const useRequest = <T = Record<string, unknown> | null, E = unknown>(
                 }
 
                 const interceptorPayload = {
-                    headers, 
+                    headers,
                     method: requestMethod,
                     queryParams: config?.query,
                     url: requestUrlRef.current,
                     body: formData ?? (config as BodyRequestPayload)?.body,
-                }
+                };
 
                 let payload = appLevelRequestInterceptor?.(interceptorPayload) ?? interceptorPayload;
                 payload = interceptors?.request?.(payload) ?? payload;
 
                 retryCount.current = config?.retries ?? retryCount.current;
 
-                const { controller, timeoutRef } = getRequestAbortter(config?.timeout ?? requestTimeout) ?? {};
+                const { controller, timeoutRef } =
+                    getRequestAbortter(config?.timeout ?? requestTimeout) ?? {};
                 const response = await fetchRequest(payload, config, controller);
 
                 if (timeoutRef) clearTimeout(timeoutRef);
 
                 const responseBody = JSON.parse((await response.text()) || '{}');
 
-                let responsePayload = Object.defineProperties({}, {
-                    url: getEnumerableProperties(payload.url),
-                    method: getEnumerableProperties(payload.method),
-                    status: getEnumerableProperties(response.status),
-                    data: getEnumerableProperties(responseBody, true),
-                    queryParams: getEnumerableProperties(payload.queryParams)
-                }) as InterceptorResponsePayload;
+                const responsePayload = Object.defineProperties(
+                    {},
+                    {
+                        url: getEnumerableProperties(payload.url),
+                        method: getEnumerableProperties(payload.method),
+                        status: getEnumerableProperties(response.status),
+                        data: getEnumerableProperties(responseBody, true),
+                        queryParams: getEnumerableProperties(payload.queryParams),
+                    }
+                ) as InterceptorResponsePayload;
 
-                responsePayload.data = appLevelResponseInterceptor?.(responsePayload)?.data ?? responsePayload?.data;
-                responsePayload.data = interceptors?.response?.(responsePayload)?.data ?? responsePayload?.data;
+                responsePayload.data =
+                    appLevelResponseInterceptor?.(responsePayload)?.data ?? responsePayload?.data;
+                responsePayload.data =
+                    interceptors?.response?.(responsePayload)?.data ?? responsePayload?.data;
 
                 dispatchLoadingState?.(false);
 
@@ -129,8 +145,8 @@ export const useRequest = <T = Record<string, unknown> | null, E = unknown>(
                         config?.successMessage || responsePayload.data?.message || response.statusText;
 
                     const newState = getSuccessState(state, responsePayload.data as T, successMessage);
-                    const valueToStore = {   
-                        name, 
+                    const valueToStore = {
+                        name,
                         url: payload.url,
                         value: { data: responsePayload.data, queryParam: payload.queryParams },
                     };
@@ -138,7 +154,7 @@ export const useRequest = <T = Record<string, unknown> | null, E = unknown>(
                     if (sessionStorage) saveValueToSession(valueToStore);
                     if (localStorage) saveValueToLocalStorage(valueToStore);
 
-                    setRequestUpdate?.((initialValue) => ++initialValue );
+                    setRequestUpdate?.((initialValue) => ++initialValue);
                     dispatchSuccessRequest?.(responsePayload.data);
                     setState(newState);
                     props?.onSuccess?.(responsePayload.data as T);
@@ -153,21 +169,24 @@ export const useRequest = <T = Record<string, unknown> | null, E = unknown>(
                         responsePayload.data?.error?.error;
 
                     const newState = getErrorState<E>(state, responsePayload.data as E, errorMessage);
-                    dispatchErrorRequest?.(responsePayload.data)
+                    dispatchErrorRequest?.(responsePayload.data);
                     props?.onError?.(newState.data);
                     setState(newState);
                     return newState.data;
                 }
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } catch (err: any) {
-                console.log(err);
                 if (retryCount.current > 1) {
                     retryCount.current = --retryCount.current;
-                    const response = await makeRequest(requestUrlRef.current!!, { ...config, retries: retryCount.current });
+                    const response = await makeRequest(requestUrlRef.current ?? '', {
+                        ...config,
+                        retries: retryCount.current,
+                    });
                     return response;
                 }
 
                 dispatchLoadingState?.(false);
-                const newState = getErrorState<E>(state, err, err.message || 'An error occur.');
+                const newState = getErrorState<E>(state, err, err?.message || 'An error occur.');
                 dispatchErrorRequest?.(err);
                 setState(newState);
                 props?.onError?.(newState.data);
@@ -176,27 +195,27 @@ export const useRequest = <T = Record<string, unknown> | null, E = unknown>(
         },
         [
             appLevelResponseInterceptor,
-            appLevelRequestInterceptor, 
+            appLevelRequestInterceptor,
             dispatchSuccessRequest,
             dispatchLoadingState,
             dispatchErrorRequest,
-            setRequestUpdate, 
-            sessionStorage, 
+            setRequestUpdate,
+            sessionStorage,
             requestTimeout,
             setStoredData,
             memoryStorage,
-            interceptors, 
+            interceptors,
             localStorage,
             storedData,
-            authToken, 
-            baseUrl, 
-            props,   
-            state,   
-            name, 
+            authToken,
+            baseUrl,
+            props,
+            state,
+            name,
         ]
     );
 
-    return [ state, makeRequest ];
+    return [state, makeRequest];
 };
 
 const getSuccessState = <T>(initialState: object, data: T | null, message?: string) => ({
@@ -205,7 +224,7 @@ const getSuccessState = <T>(initialState: object, data: T | null, message?: stri
     loading: false,
     success: true,
     error: false,
-    data
+    data,
 });
 
 const getErrorState = <E>(initialState: object, data: E | null, message?: string) => ({
@@ -217,4 +236,8 @@ const getErrorState = <E>(initialState: object, data: E | null, message?: string
     data,
 });
 
-const getEnumerableProperties = (value: any, writable: boolean = false) => ({ value, writable, enumerable: true });
+const getEnumerableProperties = (value: unknown, writable: boolean = false) => ({
+    value,
+    writable,
+    enumerable: true,
+});

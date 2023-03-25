@@ -1,5 +1,5 @@
 const objectDeepEqual = (aObject: any, bObject: any) => {
-    if (typeof aObject !== 'object')  return String(aObject) === String(bObject);
+    if (typeof aObject !== 'object') return String(aObject) === String(bObject);
     if ([aObject, bObject].includes(null)) return aObject === bObject;
     if (Object.keys(aObject).length !== Object.keys(bObject).length) return false;
 
@@ -8,6 +8,6 @@ const objectDeepEqual = (aObject: any, bObject: any) => {
     }
 
     return true;
-}
+};
 
 export default objectDeepEqual;
