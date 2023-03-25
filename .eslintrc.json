@@ -43,7 +43,7 @@
     },
     "overrides": [
         {
-            "files": ["./src/test/**/*.{ts,js}"],
+            "files": ["./tests/**/*.{ts,js}"],
             "rules": {
                 "require-await": "off"
             }
