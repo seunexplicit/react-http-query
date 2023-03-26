@@ -1,2 +1,5 @@
 # Ignore readme file.
 README.md
+
+# Ignore build files.
+dist/*

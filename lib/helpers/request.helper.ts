@@ -5,7 +5,7 @@ import {
     GetRequestPayload,
     InterceptorPayload,
     RequestHeader,
-} from '../index.d';
+} from '../model';
 
 /**
  * Checks if a string is an absolute url or a path

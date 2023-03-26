@@ -1,5 +1,5 @@
 import { createContext, useState } from 'react';
-import { MemoryStorageContextProps, StoredValue } from '../index.d';
+import { MemoryStorageContextProps, StoredValue } from '../model';
 
 const MemoryStorageContext = createContext<MemoryStorageContextProps<unknown>>({ storedData: {} });
 

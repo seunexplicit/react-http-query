@@ -1,5 +1,5 @@
 import { createContext, useState } from 'react';
-import { RequestProviderProps } from '../index.d';
+import { RequestProviderProps } from '../model';
 import { MemoryStorageProvider } from './memory-storage.context';
 import { PrivateProvider } from './private.context';
 
