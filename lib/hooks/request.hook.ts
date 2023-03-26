@@ -9,7 +9,7 @@ import {
     InterceptorResponsePayload,
     IResponse,
     UseRequestProps,
-} from '../index.d';
+} from '../model';
 import {
     fetchRequest,
     generatePath,

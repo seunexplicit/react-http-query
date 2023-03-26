@@ -1,5 +1,5 @@
 import { createContext } from 'react';
-import { InterceptorPayload, InterceptorResponsePayload } from '../index.d';
+import { InterceptorPayload, InterceptorResponsePayload } from '../model';
 
 interface PrivateContextProps {
     baseUrl?: string;

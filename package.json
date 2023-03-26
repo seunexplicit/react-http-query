@@ -16,12 +16,6 @@
         "url": "https://github.com/seunexplicit/react-http-query.git",
         "type": "git"
     },
-    "private": true,
-    "dependencies": {
-        "react-dom": "^18.2.0",
-        "react": "^18.2.0",
-        "react-scripts": "5.0.1"
-    },
     "scripts": {
         "rollup": "rm ./dist -rf & rollup -c",
         "format": "npx prettier --write \"src/**/*.+(js|ts)\"",
@@ -53,6 +47,7 @@
         "@babel/preset-env": "^7.20.2",
         "@babel/preset-react": "^7.18.6",
         "@babel/preset-typescript": "^7.21.0",
+        "@rollup/plugin-babel": "^6.0.3",
         "@rollup/plugin-commonjs": "^24.0.1",
         "@rollup/plugin-node-resolve": "^15.0.1",
         "@rollup/plugin-terser": "^0.4.0",
@@ -71,18 +66,19 @@
         "eslint-plugin-prettier": "^4.0.0",
         "jest-fetch-mock": "^3.0.3",
         "prettier": "^2.5.1",
+        "react-scripts": "5.0.1",
         "rollup": "^3.20.2",
-        "rollup-plugin-dts": "^5.3.0",
         "typescript": "^4.9.5"
     },
     "peerDependencies": {
-        "react": "^18.2.0"
+        "react": "^18.2.0",
+        "react-dom": "^18.2.0"
     },
     "main": "dist/cjs/index.js",
-    "module": "dist/esm/index.js",
+    "module": "dist/esm/index.esm.js",
     "files": [
-        "dist"
+        "/dist"
     ],
-    "types": "dist/index.d.ts",
+    "types": "dist/types/index.d.ts",
     "type": "module"
 }

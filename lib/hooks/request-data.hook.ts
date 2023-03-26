@@ -6,7 +6,7 @@ import {
     retrieveStoredValue,
 } from '../helpers/stored-value-management';
 import { useContext, useEffect, useState } from 'react';
-import { StorageType } from '../index.d';
+import { StorageType } from '../model';
 
 export const useRequestData = <T>(name: string, storageLocation?: StorageType) => {
     const [data, setData] = useState<T>();

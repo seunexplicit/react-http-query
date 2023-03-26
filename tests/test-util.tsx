@@ -1,6 +1,6 @@
 import React from 'react';
-import { RequestProvider, useRequest, useRequestConfig, useRequestData } from '../src/lib';
-import { RequestProviderProps, StorageType } from '../src/lib/index.d';
+import { RequestProvider, useRequest, useRequestConfig, useRequestData } from '../lib';
+import { RequestProviderProps, StorageType } from '../lib/model';
 import '@testing-library/jest-dom';
 
 export const RequestWrapper =

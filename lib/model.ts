@@ -5,7 +5,7 @@ type RequestMethod = 'GET' | 'HEAD' | 'OPTIONS' | 'POST' | 'DELETE' | 'PUT' | 'P
 export type StorageType = 'memory' | 'session' | 'local';
 export interface InterceptorPayload {
     headers: Record<string, any>;
-    body?: Record<string | unknown> | BodyInit;
+    body?: Record<string, unknown> | BodyInit;
     method: RequestMethod;
     url: string;
     queryParams?: Record<string, any>;
@@ -88,16 +88,19 @@ export interface RequestProviderProps {
     children?: React.ReactNode;
     /**
      * App level request success callback, it returns the success payload.
-     * An optional alert component can be returned that is displayed within {@linkcode RequestProviderProps.popupTimeout}
+     * An optional alert component can be returned that is displayed within 
+     * {@linkcode RequestProviderProps.popupTimeout}
      */
     onSuccess?: (successPayload: any) => React.ReactNode | void;
     /**
      * App level request error callback, it returns the error payload.
-     * An optional alert component can be returned that is displayed within {@linkcode RequestProviderProps.popupTimeout}
+     * An optional alert component can be returned that is 
+     * displayed within {@linkcode RequestProviderProps.popupTimeout}
      */
     onError?: (errorPayload: any) => React.ReactNode | void;
     /**
-     * Callback that indicate when request is in progress. Returns `true` when in progress and `false` otherwise.
+     * Callback that indicate when request is in progress. Returns `true` when in progress 
+     * and `false` otherwise.
      * An optional loader component can be returned, to be displayed whenever request is in progress.
      */
     onLoading?: (state: boolean) => React.ReactNode | void;

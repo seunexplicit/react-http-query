@@ -1,4 +1,4 @@
-import { StoredValue } from '../index.d';
+import { StoredValue } from '../model';
 
 export const __STORAGE_NAME_PREFIX__ = 'react-http-request';
 interface SaveStoredValueArgs<T> {
