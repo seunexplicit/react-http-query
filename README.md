@@ -162,6 +162,7 @@ The `useRequest` hook provides the request metadata which are:
 |  name  | The name of the request. This should be a unique identifier, different from any other name given to other request in your application. It is used to retrieve request data stored in the application `state`, `localStorage` or `sessionStorage`.  |
 |  baseUrl | The base URL of requests made by the `makeRequest` function. `makeRequest` can be provided with path instead of absolute url, if the `baseUrl` is assigned a value.  |
 |  onSuccess  | A callback function that is called when the request succeeds. The request's response data is passed down to it. The callback can be used to perform any required operations when the request succeeds.  |
+|  onMount  | A callback function that is called once your component mounts, it returns a `makeRequest` function as an argument, that could be used to make a request on mount of the components.  |
 |  onError  | A callback function that is called when the request fails. The request's response error body is passed down to it. The callback can be used to perform any required operations when the request fails.  |
 | interceptors  | This allow request to be intercepted at the component level before the call is being made or  before the response are being passed to the component state. It allows two optional function parameters, which are `response` and `request`. See more about [intercpetors](#interceptors)  |
 |  localStorage | A `Boolean` value that determines if the request's response data should be stored in local storage. The stored value can be retrieved from any part of the application using the `useRequestData` with the `name` property.  |
@@ -237,16 +238,13 @@ The request provider provides a powerful means of managing/configuring all appli
 | interceptors  | This allow request to be intercepted at the app level before the call is being made or  before the response are being passed to the component state. It allows two optional function parameters, which are `response` and `request`. See more about [intercpetors](#interceptors)  |  |
 ### Usage Examples
 ```js
-import React from 'react';
 import { useRequest, RequestProvider } from 'react-http-query';
 
 const Profile = () => {
-    const [{ data, loading }, makeRequest] = useRequest();
-
-    React.useEffect(() => {
+    const [{ data, loading }] = useRequest({
         // The baseUrl set in the RequestProvider would be prepend to the path of this request
-        makeRequest('/profile');
-    }, [])
+        onMount: (makeRequest) => makeRequest('/profile')
+    });
 
     return (
         <>
@@ -353,33 +351,32 @@ const Dashboard = () => {
 `useRequestData` is not the only means of retrieving saved data. When data are saved to either the `memoryStorage`, `sessionStorage`, or `localStorage` and another request is made to the same endpoint, a check will be made to see if there is an existing saved data, if there is it returns the saved data, otherwise it makes another round of request. A new request will be made if there is a change in the query parameters or `forceRefetch` is set to `true` in the `makeRequest` config. This is especially useful for static data, such as list of countries, etc. as it reduces the number of server call.
 ```js
 const FirstCall = () => {
-    [{}, makeCountryLookupRequest] = useRequest({ memoryStorage: true });
-
-    React.useEffect(() => {
+    [{}] = useRequest({ 
+        memoryStorage: true,
         // Request gets to the sever, as this is the first call.
-        makeCountryLookupRequest('/lookup/countries');
-    }, [])
+        onMount: (makeCountryLookupRequest) => makeCountryLookupRequest('/lookup/countries')
+    });
 }
 
 const SecondCall = () => {
     // It is important to still set memoryStorage to true, on subsequent requests
     // This would ensure that the response are cached as well, if another call is made to the server.
-    [{}, makeCountryLookupRequest] = useRequest({ memoryStorage: true });
-
-    React.useEffect(() => {
+    [{}] = useRequest({ 
+        memoryStorage: true,
         // Request will not get to the server, saved data from the memory would be retrieved.
         // Response time would be faster than first call.
-        makeCountryLookupRequest('/lookup/countries');
-    }, [])
+        onMount: (makeCountryLookupRequest) => makeCountryLookupRequest('/lookup/countries')
+    });
 }
 
 const ThirdCall = () => {
-    [{}, makeCountryLookupRequest] = useRequest({ memoryStorage: true });
-
-    React.useEffect(() => {
+    [{}, makeCountryLookupRequest] = useRequest({ 
+        memoryStorage: true,
         // Request gets to the sever, because `forceRefetch` is set to `true`
-        makeCountryLookupRequest('/lookup/countries', { forceRefetch: true });
-    }, [])
+        onMount: (makeCountryLookupRequest) => {
+            makeCountryLookupRequest('/lookup/countries', { forceRefetch: true })
+        }
+    });
 }
 ```
 ## Interceptors

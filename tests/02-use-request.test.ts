@@ -5,6 +5,7 @@ import {
     mockWindowProperty,
     renderHook,
     setupMockupRequest,
+    waitFor,
     __BAD_RESPONSE__,
     __MOCK_DATA__,
 } from './test-util';
@@ -40,6 +41,24 @@ describe('useRequest', () => {
         await act(() => makeRequest(GOOD_URL));
 
         expect(responsePayload.body).toStrictEqual(__MOCK_DATA__.body);
+    });
+
+    test('should make request on mount of the component', async () => {
+        let done = false;
+
+        const { result } = renderHook(() =>
+            useRequest({
+                onMount: async (makeRequest) => {
+                    await act(() => makeRequest(GOOD_URL));
+                    done = true;
+                },
+            })
+        );
+
+        await waitFor(() => expect(done).toBe(true));
+        const [{ data }] = result.current;
+
+        expect(data.body).toStrictEqual(__MOCK_DATA__.body);
     });
 
     test('should get error payload from `onError` callback', async () => {

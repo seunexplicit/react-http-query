@@ -8,6 +8,7 @@ import {
     GetRequestPayload,
     InterceptorResponsePayload,
     IResponse,
+    MakeRequest,
     UseRequestProps,
 } from '../model';
 import {
@@ -22,7 +23,7 @@ import {
     saveValueToMemory,
     saveValueToSession,
 } from '../helpers/stored-value-management';
-import { useCallback, useContext, useRef, useState } from 'react';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 
 const initialState = {
     loading: false,
@@ -35,13 +36,7 @@ const initialState = {
 
 export const useRequest = <T = any, E = unknown>(
     props?: UseRequestProps<T, E>
-): [
-    IResponse<T, E>,
-    (
-        url: string,
-        config?: GetRequestPayload | BodyRequestPayload | FormDataRequestPayload
-    ) => Promise<T | E | null>
-] => {
+): [IResponse<T, E>, MakeRequest<T, E>] => {
     const [state, setState] = useState<IResponse<T, E>>({ ...initialState });
     const retryCount = useRef(1);
     const requestUrlRef = useRef<string>();
@@ -212,6 +207,10 @@ export const useRequest = <T = any, E = unknown>(
             name,
         ]
     );
+
+    useEffect(() => {
+        props?.onMount?.(makeRequest);
+    }, []);
 
     return [state, makeRequest];
 };
