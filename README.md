@@ -370,7 +370,7 @@ const SecondCall = () => {
 }
 
 const ThirdCall = () => {
-    [{}, makeCountryLookupRequest] = useRequest({ 
+    [{}] = useRequest({ 
         memoryStorage: true,
         // Request gets to the sever, because `forceRefetch` is set to `true`
         onMount: (makeCountryLookupRequest) => {
