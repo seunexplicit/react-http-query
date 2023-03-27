@@ -21,7 +21,7 @@
         "format": "npx prettier --write \"src/**/*.+(js|ts)\"",
         "start": "react-scripts start",
         "build": "react-scripts build",
-        "test": "jest",
+        "test": "jest --watch lib/**/*.{js,ts,jsx,tsx}",
         "eject": "react-scripts eject"
     },
     "eslintConfig": {
@@ -71,8 +71,8 @@
         "typescript": "^4.9.5"
     },
     "peerDependencies": {
-        "react": "^18.2.0",
-        "react-dom": "^18.2.0"
+        "react": "^16.8 || ^17.0 || ^18.0",
+        "react-dom": "^16.8 || ^17.0 || ^18.0"
     },
     "main": "dist/cjs/index.js",
     "module": "dist/esm/index.esm.js",

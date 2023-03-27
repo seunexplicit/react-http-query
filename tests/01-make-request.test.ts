@@ -1,7 +1,8 @@
 import { act, renderHook } from '@testing-library/react';
-import { useRequest } from '../src/lib';
+import { useRequest } from '../lib';
 import { BAD_URL, GOOD_URL, setupMockupRequest, __BAD_RESPONSE__, __MOCK_DATA__ } from './test-util';
 import fetchMock from 'jest-fetch-mock';
+import React from 'react';
 
 fetchMock.enableMocks();
 const mockedFetch = fetch as unknown as typeof fetchMock;
@@ -36,6 +37,24 @@ describe('makeRequest', () => {
         expect(success).toBe(true);
         expect(error).toBe(false);
         expect(fetch).toBeCalled();
+    });
+
+    test('should make an API call', async () => {
+        const spyFunc = jest.fn();
+        renderHook(
+            () => {
+                const [, makeRequest] = useRequest();
+                React.useEffect(() => {
+                    spyFunc();
+                    makeRequest(GOOD_URL);
+                }, [makeRequest]);
+            },
+            {
+                initialProps: {},
+            }
+        );
+
+        expect(spyFunc).toBeCalledTimes(1);
     });
 
     test('should contain error body when request has error', async () => {
