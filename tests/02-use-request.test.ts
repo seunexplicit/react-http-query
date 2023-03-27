@@ -9,7 +9,7 @@ import {
     __MOCK_DATA__,
 } from './test-util';
 import fetchMock from 'jest-fetch-mock';
-import { useRequest } from '../src/lib';
+import { useRequest } from '../lib';
 import StorageMock from './mock-storage';
 
 fetchMock.enableMocks();

@@ -33,7 +33,7 @@ const initialState = {
     status: null,
 };
 
-export const useRequest = <T = Record<string, unknown> | null, E = unknown>(
+export const useRequest = <T = any, E = unknown>(
     props?: UseRequestProps<T, E>
 ): [
     IResponse<T, E>,
@@ -196,7 +196,6 @@ export const useRequest = <T = Record<string, unknown> | null, E = unknown>(
         [
             appLevelResponseInterceptor,
             appLevelRequestInterceptor,
-            dispatchSuccessRequest,
             dispatchLoadingState,
             dispatchErrorRequest,
             setRequestUpdate,
@@ -210,7 +209,6 @@ export const useRequest = <T = Record<string, unknown> | null, E = unknown>(
             authToken,
             baseUrl,
             props,
-            state,
             name,
         ]
     );

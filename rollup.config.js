@@ -15,25 +15,20 @@ const babelPlugin = babel({
 
 /**
  * Get rollup config for different build type.
- * 
+ *
  * @param {'esm' | 'cjs'} configType The configuration type.
- * @returns 
+ * @returns
  */
 const getRollupConfig = (configType) => ({
     external: ['react', 'react-dom'],
     input: inputFile,
     output: {
-        file:  configType === 'cjs' ? packageJson.main : packageJson.module,
+        file: configType === 'cjs' ? packageJson.main : packageJson.module,
         format: configType,
         sourcemap: true,
-        ...(configType === 'cjs' &&  { exports: 'named' }),
+        ...(configType === 'cjs' && { exports: 'named' }),
     },
-    plugins: [
-        resolve({ extensions: ['.ts', '.tsx'] }),
-        babelPlugin,
-        commonjs(),
-        terser(),
-    ],
+    plugins: [resolve({ extensions: ['.ts', '.tsx'] }), babelPlugin, commonjs(), terser()],
 });
 
 export default [
@@ -41,7 +36,7 @@ export default [
     getRollupConfig('esm'),
     {
         input: inputFile,
-        output: [{ file: 'dist/index.js',  format: 'es' }],
+        output: [{ file: 'dist/index.js', format: 'es' }],
         plugins: [typescript()],
-    }
+    },
 ];

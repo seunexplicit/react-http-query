@@ -88,18 +88,18 @@ export interface RequestProviderProps {
     children?: React.ReactNode;
     /**
      * App level request success callback, it returns the success payload.
-     * An optional alert component can be returned that is displayed within 
+     * An optional alert component can be returned that is displayed within
      * {@linkcode RequestProviderProps.popupTimeout}
      */
     onSuccess?: (successPayload: any) => React.ReactNode | void;
     /**
      * App level request error callback, it returns the error payload.
-     * An optional alert component can be returned that is 
+     * An optional alert component can be returned that is
      * displayed within {@linkcode RequestProviderProps.popupTimeout}
      */
     onError?: (errorPayload: any) => React.ReactNode | void;
     /**
-     * Callback that indicate when request is in progress. Returns `true` when in progress 
+     * Callback that indicate when request is in progress. Returns `true` when in progress
      * and `false` otherwise.
      * An optional loader component can be returned, to be displayed whenever request is in progress.
      */
