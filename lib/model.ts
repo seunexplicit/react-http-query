@@ -67,6 +67,7 @@ export interface UseRequestProps<T, E> {
     sessionStorage?: boolean;
     onSuccess?: (res: T) => void;
     onError?: (error: E | unknown) => void;
+    onMount?: (makeRequest: MakeRequest<T, E>) => void;
     interceptors?: {
         response?: (payload: InterceptorResponsePayload) => InterceptorResponsePayload;
         request?: (payload: InterceptorPayload) => InterceptorPayload;
@@ -129,3 +130,8 @@ export interface MemoryStorageContextProps<T> {
     setRequestUpdate?: React.Dispatch<React.SetStateAction<number>>;
     requestUpdate?: number;
 }
+
+export type MakeRequest<T, E> = (
+    url: string,
+    config?: GetRequestPayload | BodyRequestPayload | FormDataRequestPayload
+) => Promise<T | E | null>;

@@ -39,7 +39,7 @@ describe('makeRequest', () => {
         expect(fetch).toBeCalled();
     });
 
-    test('should make an API call', async () => {
+    test('`makeRequest` should not cause multiple rerendering of component', async () => {
         const spyFunc = jest.fn();
         renderHook(
             () => {
