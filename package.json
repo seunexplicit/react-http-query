@@ -1,6 +1,6 @@
 {
     "name": "react-http-query",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "author": {
         "name": "Olusanya Timothy",
         "email": "seunxplicit@gmail.com"
@@ -17,12 +17,9 @@
         "type": "git"
     },
     "scripts": {
-        "rollup": "rm ./dist -rf & rollup -c",
-        "format": "npx prettier --write \"src/**/*.+(js|ts)\"",
-        "start": "react-scripts start",
-        "build": "react-scripts build",
-        "test": "jest --watch lib/**/*.{js,ts,jsx,tsx}",
-        "eject": "react-scripts eject"
+        "rollup": "rm -rf ./dist & rollup -c",
+        "format": "npx prettier --write lib/**/*.{js,ts}",
+        "test": "jest --watch test/**/*.{js,ts,jsx,tsx}"
     },
     "eslintConfig": {
         "extends": [
@@ -57,16 +54,16 @@
         "@testing-library/user-event": "^13.5.0",
         "@types/eslint": "7.2.6",
         "@types/jest": "^29.4.0",
-        "@types/node": "^16.18.14",
         "@types/react": "^18.0.28",
         "@types/react-dom": "^18.0.11",
         "babel-jest": "^29.5.0",
         "eslint": "^8.10.0",
         "eslint-config-prettier": "^8.5.0",
         "eslint-plugin-prettier": "^4.0.0",
+        "jest": "^29.5.0",
+        "jest-environment-jsdom": "^29.5.0",
         "jest-fetch-mock": "^3.0.3",
         "prettier": "^2.5.1",
-        "react-scripts": "5.0.1",
         "rollup": "^3.20.2",
         "typescript": "^4.9.5"
     },

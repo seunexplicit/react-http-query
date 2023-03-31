@@ -1,19 +1,5 @@
 import { createContext } from 'react';
-import { InterceptorPayload, InterceptorResponsePayload } from '../model';
-
-interface PrivateContextProps {
-    baseUrl?: string;
-    loading: boolean;
-    authToken?: string;
-    requestTimeout?: number;
-    dispatchErrorRequest?: (payload: any) => void;
-    dispatchSuccessRequest?: (payload: any) => void;
-    dispatchLoadingState?: (state: boolean) => void;
-    setBaseUrl?: React.Dispatch<React.SetStateAction<string>>;
-    setAuthToken?: React.Dispatch<React.SetStateAction<string>>;
-    requestInterceptor?: (payload: InterceptorPayload) => InterceptorPayload;
-    responseInterceptor?: (payload: InterceptorResponsePayload) => InterceptorResponsePayload;
-}
+import { PrivateContextProps } from '../model';
 
 const PrivateContext = createContext<PrivateContextProps>({ loading: false });
 

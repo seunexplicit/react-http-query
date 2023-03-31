@@ -1,6 +1,13 @@
 import { act, renderHook } from '@testing-library/react';
 import { useRequest } from '../lib';
-import { BAD_URL, GOOD_URL, setupMockupRequest, __BAD_RESPONSE__, __MOCK_DATA__ } from './test-util';
+import {
+    BAD_URL,
+    GOOD_URL,
+    setupMockupRequest,
+    StrictMode,
+    __BAD_RESPONSE__,
+    __MOCK_DATA__,
+} from './test-util';
 import fetchMock from 'jest-fetch-mock';
 import React from 'react';
 
@@ -46,15 +53,16 @@ describe('makeRequest', () => {
                 const [, makeRequest] = useRequest();
                 React.useEffect(() => {
                     spyFunc();
-                    makeRequest(GOOD_URL);
+                    makeRequest?.(GOOD_URL);
                 }, [makeRequest]);
             },
             {
                 initialProps: {},
+                wrapper: StrictMode,
             }
         );
 
-        expect(spyFunc).toBeCalledTimes(1);
+        expect(fetchMock).toBeCalledTimes(1);
     });
 
     test('should contain error body when request has error', async () => {

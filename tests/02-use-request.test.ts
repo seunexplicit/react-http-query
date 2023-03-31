@@ -5,6 +5,7 @@ import {
     mockWindowProperty,
     renderHook,
     setupMockupRequest,
+    StrictMode,
     waitFor,
     __BAD_RESPONSE__,
     __MOCK_DATA__,
@@ -12,6 +13,7 @@ import {
 import fetchMock from 'jest-fetch-mock';
 import { useRequest } from '../lib';
 import StorageMock from './mock-storage';
+import { useEffect } from 'react';
 
 fetchMock.enableMocks();
 
@@ -59,6 +61,22 @@ describe('useRequest', () => {
         const [{ data }] = result.current;
 
         expect(data.body).toStrictEqual(__MOCK_DATA__.body);
+    });
+
+    test('should not make cyclic call when in strictmode', async () => {
+        renderHook(
+            () => {
+                const [, makeSecondRequest] = useRequest({
+                    onMount: async (makeRequest) => await act(() => makeRequest(GOOD_URL)),
+                });
+                useEffect(() => {
+                    makeSecondRequest(GOOD_URL);
+                }, [makeSecondRequest]);
+            },
+            { wrapper: StrictMode }
+        );
+
+        expect(fetchMock).toBeCalledTimes(1);
     });
 
     test('should get error payload from `onError` callback', async () => {
@@ -170,7 +188,7 @@ describe('useRequest', () => {
     });
 
     test('should intercept and update response payload `data`', async () => {
-        const interceptorBody = { extra: 'from-Intercpetor' };
+        const interceptorBody = { extra: 'from-Interceptor' };
 
         const { result } = renderHook(() =>
             useRequest({
