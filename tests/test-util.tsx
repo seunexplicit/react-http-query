@@ -32,6 +32,10 @@ export const UseRequestDataWrapper = ({
     return [saveData, makeRequest];
 };
 
+export const StrictMode = ({ children }) => {
+    return <React.StrictMode>{children}</React.StrictMode>;
+};
+
 export const UseRequestConfigWrapper = () => {
     const [, makeRequest] = useRequest();
     const config = useRequestConfig();

@@ -1,11 +1,5 @@
 import queryBuilder from './query-builder';
-import {
-    BodyRequestPayload,
-    FormDataRequestPayload,
-    GetRequestPayload,
-    InterceptorPayload,
-    RequestHeader,
-} from '../model';
+import { HandlerDependency, InterceptorPayload, RequestHeader } from '../model';
 
 /**
  * Checks if a string is an absolute url or a path
@@ -97,9 +91,9 @@ export const getRequestAbortter = (timeout?: number) => {
     return { controller, timeoutRef };
 };
 
-export const fetchRequest = (
+export const fetchRequest = <T, E>(
     payload: InterceptorPayload,
-    config?: GetRequestPayload | BodyRequestPayload | FormDataRequestPayload,
+    config?: HandlerDependency<T, E>,
     controller?: AbortController
 ) => {
     return fetch(`${payload.url}${queryBuilder(payload.queryParams)}`, {
@@ -128,3 +122,18 @@ export const fetchRequest = (
 };
 
 const getProperty = (key: string, payload?: any) => payload?.[key] !== undefined && { [key]: payload[key] };
+
+export const getInitialState = {
+    loading: false,
+    error: false,
+    success: false,
+    data: null,
+    message: '',
+    status: null,
+};
+
+export const getEnumerableProperties = (value: unknown, writable: boolean = false) => ({
+    value,
+    writable,
+    enumerable: true,
+});

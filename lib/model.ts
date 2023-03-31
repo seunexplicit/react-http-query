@@ -1,6 +1,6 @@
 export type RequestHeader = Record<string, string> | { append: Record<string, string> };
 
-type RequestMethod = 'GET' | 'HEAD' | 'OPTIONS' | 'POST' | 'DELETE' | 'PUT' | 'PATCH';
+export type RequestMethod = 'GET' | 'HEAD' | 'OPTIONS' | 'POST' | 'DELETE' | 'PUT' | 'PATCH';
 
 export type StorageType = 'memory' | 'session' | 'local';
 export interface InterceptorPayload {
@@ -59,6 +59,13 @@ export interface IResponse<T, E> {
     status?: number | string | null;
 }
 
+export type Interceptors = {
+    /** Intercept request payload */
+    response?: (payload: InterceptorResponsePayload) => InterceptorResponsePayload;
+    /** Intercept response payload */
+    request?: (payload: InterceptorPayload) => InterceptorPayload;
+};
+
 export interface UseRequestProps<T, E> {
     name?: string;
     baseUrl?: string;
@@ -68,10 +75,7 @@ export interface UseRequestProps<T, E> {
     onSuccess?: (res: T) => void;
     onError?: (error: E | unknown) => void;
     onMount?: (makeRequest: MakeRequest<T, E>) => void;
-    interceptors?: {
-        response?: (payload: InterceptorResponsePayload) => InterceptorResponsePayload;
-        request?: (payload: InterceptorPayload) => InterceptorPayload;
-    };
+    interceptors?: Interceptors;
 }
 
 export interface RequestProviderProps {
@@ -106,12 +110,7 @@ export interface RequestProviderProps {
      */
     onLoading?: (state: boolean) => React.ReactNode | void;
     /** App level interceptors */
-    interceptors?: {
-        /** Intercept request object */
-        request?: (payload: InterceptorPayload) => InterceptorPayload;
-        /** Intercept response object */
-        response?: (payload: InterceptorResponsePayload) => InterceptorResponsePayload;
-    };
+    interceptors?: Interceptors;
     /** Display timeout (in seconds) for error or success popup if available. Default to `8s` */
     popupTimeout?: number;
 }
@@ -134,4 +133,48 @@ export interface MemoryStorageContextProps<T> {
 export type MakeRequest<T, E> = (
     url: string,
     config?: GetRequestPayload | BodyRequestPayload | FormDataRequestPayload
-) => Promise<T | E | null>;
+) => Promise<IResponse<T, E>['data']>;
+
+export interface PrivateContextProps {
+    baseUrl?: string;
+    loading: boolean;
+    authToken?: string;
+    requestTimeout?: number;
+    dispatchErrorRequest?: (payload: any) => void;
+    dispatchSuccessRequest?: (payload: any) => void;
+    dispatchLoadingState?: (state: boolean) => void;
+    setBaseUrl?: React.Dispatch<React.SetStateAction<string>>;
+    setAuthToken?: React.Dispatch<React.SetStateAction<string>>;
+    requestInterceptor?: (payload: InterceptorPayload) => InterceptorPayload;
+    responseInterceptor?: (payload: InterceptorResponsePayload) => InterceptorResponsePayload;
+}
+
+
+export interface IRequestHandler<T, E> {
+    makeRequest: MakeRequest<T, E>;
+}
+
+export type HandlerDependency<T, E>  = Omit<
+    Partial<
+        Omit<
+            GetRequestPayload &
+                BodyRequestPayload &
+                FormDataRequestPayload &
+                PrivateContextProps &
+                UseRequestProps<T, E>,
+            'method'
+        >
+    > & {
+        appLevelInterceptor?: Interceptors;
+        appLevelBaseUrl?: string;
+        path?: string;
+        appLevelTimeout?: number;
+        setRequestUpdate?: React.Dispatch<React.SetStateAction<number>>;
+        setStateData?: React.Dispatch<
+            React.SetStateAction<Record<string, StoredValue<unknown> | undefined>>
+        >;
+        stateData: Record<string, StoredValue<unknown> | undefined>;
+        method?: RequestMethod;
+    },
+    'requestTimeout'
+>
