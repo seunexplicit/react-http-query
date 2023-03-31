@@ -91,9 +91,9 @@ export const getRequestAbortter = (timeout?: number) => {
     return { controller, timeoutRef };
 };
 
-export const fetchRequest = <T, E>(
+export const fetchRequest = <T>(
     payload: InterceptorPayload,
-    config?: HandlerDependency<T, E>,
+    config?: HandlerDependency<T>,
     controller?: AbortController
 ) => {
     return fetch(`${payload.url}${queryBuilder(payload.queryParams)}`, {

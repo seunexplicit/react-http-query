@@ -27,16 +27,16 @@ import {
     RequestMethod,
 } from '../model';
 
-export default class RequestHandler<T, E> implements IRequestHandler<T, E> {
-    private dependency: HandlerDependency<T, E> = {
+export default class RequestHandler<T> implements IRequestHandler<T> {
+    private dependency: HandlerDependency<T> = {
         stateData: {},
     };
 
-    private responsePayload: IResponse<T, E> = { ...getInitialState };
+    private responsePayload: IResponse<T> = { ...getInitialState };
     private retryCount = 1;
 
     constructor(
-        private setRequestState: React.Dispatch<React.SetStateAction<[IResponse<T, E>, MakeRequest<T, E>]>>
+        private setRequestState: React.Dispatch<React.SetStateAction<[IResponse<T>, MakeRequest<T>]>>
     ) {}
 
     setDependency(dependency: typeof this.dependency) {

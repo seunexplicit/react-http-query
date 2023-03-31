@@ -50,14 +50,15 @@ export interface FormDataRequestPayload extends Omit<RequestPayload, 'body'> {
     formData: Record<string, any>;
 }
 
-export interface IResponse<T, E> {
+export interface IResponse<T> {
     loading: boolean;
     error: true | false;
     success: boolean;
-    data?: T | E | null;
+    data?: T | null;
     message: string;
     status?: number | string | null;
 }
+
 
 export type Interceptors = {
     /** Intercept request payload */
@@ -66,15 +67,15 @@ export type Interceptors = {
     request?: (payload: InterceptorPayload) => InterceptorPayload;
 };
 
-export interface UseRequestProps<T, E> {
+export interface UseRequestProps<T> {
     name?: string;
     baseUrl?: string;
     localStorage?: boolean;
     memoryStorage?: boolean;
     sessionStorage?: boolean;
     onSuccess?: (res: T) => void;
-    onError?: (error: E | unknown) => void;
-    onMount?: (makeRequest: MakeRequest<T, E>) => void;
+    onError?: (error: unknown) => void;
+    onMount?: (makeRequest: MakeRequest<T>) => void;
     interceptors?: Interceptors;
 }
 
@@ -130,10 +131,10 @@ export interface MemoryStorageContextProps<T> {
     requestUpdate?: number;
 }
 
-export type MakeRequest<T, E> = (
+export type MakeRequest<T> = (
     url: string,
     config?: GetRequestPayload | BodyRequestPayload | FormDataRequestPayload
-) => Promise<IResponse<T, E>['data']>;
+) => Promise<IResponse<T>['data']>;
 
 export interface PrivateContextProps {
     baseUrl?: string;
@@ -150,18 +151,18 @@ export interface PrivateContextProps {
 }
 
 
-export interface IRequestHandler<T, E> {
-    makeRequest: MakeRequest<T, E>;
+export interface IRequestHandler<T> {
+    makeRequest: MakeRequest<T>;
 }
 
-export type HandlerDependency<T, E>  = Omit<
+export type HandlerDependency<T>  = Omit<
     Partial<
         Omit<
             GetRequestPayload &
                 BodyRequestPayload &
                 FormDataRequestPayload &
                 PrivateContextProps &
-                UseRequestProps<T, E>,
+                UseRequestProps<T>,
             'method'
         >
     > & {

@@ -5,16 +5,16 @@ import { useContext, useEffect, useMemo, useState } from 'react';
 import RequestHandler from '../handler/request-handler';
 import { getInitialState } from '../helpers/request.helper';
 
-export const useRequest = <T = any, E = unknown>(
-    props?: UseRequestProps<T, E>
-): [IResponse<T, E>, MakeRequest<T, E>] => {
-    const [state, setState] = useState<[IResponse<T, E>, MakeRequest<T, E>]>([
+export const useRequest = <T = any>(
+    props?: UseRequestProps<T>
+): [IResponse<T>, MakeRequest<T>] => {
+    const [state, setState] = useState<[IResponse<T>, MakeRequest<T>]>([
         getInitialState,
         async () => null,
     ]);
 
     const requestHandler = useMemo(() => {
-        const handler = new RequestHandler<T, E>(setState);
+        const handler = new RequestHandler<T>(setState);
         Object.assign(state, { 1: handler.makeRequest.bind(handler) });
         return handler;
     }, []);
