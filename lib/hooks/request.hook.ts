@@ -5,23 +5,20 @@ import { useContext, useEffect, useMemo, useState } from 'react';
 import RequestHandler from '../handler/request-handler';
 import { getInitialState } from '../helpers/request.helper';
 
-export const useRequest = <T = any>(
-    props?: UseRequestProps<T>
-): [IResponse<T>, MakeRequest<T>] => {
-    const [state, setState] = useState<[IResponse<T>, MakeRequest<T>]>([
-        getInitialState,
-        async () => null,
-    ]);
-
+export const useRequest = <T = any>(props?: UseRequestProps<T>): [IResponse<T>, MakeRequest<T>] => {
     const requestHandler = useMemo(() => {
-        const handler = new RequestHandler<T>(setState);
-        Object.assign(state, { 1: handler.makeRequest.bind(handler) });
+        const handler = new RequestHandler<T>();
         return handler;
     }, []);
+
+    const makeRequest = useMemo(() => requestHandler.makeRequest.bind(requestHandler), []);
+
+    const [state, setState] = useState<[IResponse<T>, MakeRequest<T>]>([getInitialState, makeRequest]);
 
     const {
         baseUrl,
         authToken,
+        axiosInstance,
         requestTimeout,
         dispatchErrorRequest,
         dispatchLoadingState,
@@ -29,6 +26,7 @@ export const useRequest = <T = any>(
         requestInterceptor: appLevelRequestInterceptor,
         responseInterceptor: appLevelResponseInterceptor,
     } = useContext(PrivateContext);
+
     const { setStoredData, storedData, setRequestUpdate } = useContext(MemoryStorageContext);
     const { localStorage, sessionStorage, memoryStorage, name, interceptors } = props || {};
 
@@ -38,6 +36,7 @@ export const useRequest = <T = any>(
             appLevelBaseUrl: baseUrl,
             appLevelTimeout: requestTimeout,
             authToken,
+            axiosInstance,
             dispatchErrorRequest,
             dispatchLoadingState,
             dispatchSuccessRequest,
@@ -59,16 +58,11 @@ export const useRequest = <T = any>(
         memoryStorage,
         sessionStorage,
         requestTimeout,
-        setRequestUpdate,
-        dispatchErrorRequest,
-        dispatchLoadingState,
-        dispatchSuccessRequest,
-        appLevelRequestInterceptor,
-        appLevelResponseInterceptor,
     ]);
 
     useEffect(() => {
-        props?.onMount?.(requestHandler.makeRequest.bind(requestHandler));
+        props?.onMount?.(makeRequest);
+        requestHandler.setStateSetter(setState);
     }, []);
 
     return state;

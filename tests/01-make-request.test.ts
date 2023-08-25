@@ -14,6 +14,8 @@ import React from 'react';
 fetchMock.enableMocks();
 const mockedFetch = fetch as unknown as typeof fetchMock;
 
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 describe('makeRequest', () => {
     beforeEach(() => {
         mockedFetch.resetMocks();
@@ -47,7 +49,9 @@ describe('makeRequest', () => {
     });
 
     test('`makeRequest` should not cause multiple rerendering of component', async () => {
+        jest.useRealTimers()
         const spyFunc = jest.fn();
+
         renderHook(
             () => {
                 const [, makeRequest] = useRequest();
@@ -61,6 +65,7 @@ describe('makeRequest', () => {
                 wrapper: StrictMode,
             }
         );
+        await delay(0);
 
         expect(fetchMock).toBeCalledTimes(1);
     });
@@ -104,7 +109,7 @@ describe('makeRequest', () => {
         });
 
         const [, makeRequest] = result.current;
-        await act(async () => await makeRequest(GOOD_URL, { body: {} }));
+        await act(async () => await makeRequest(GOOD_URL, { body: { one: 'one' } }));
 
         expect(fetch).toBeCalled();
         expect(mockedFetch.mock.calls[0][1]?.method).toBe('POST');

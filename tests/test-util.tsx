@@ -80,6 +80,17 @@ export const setupMockupRequest = () => {
     });
 };
 
+export const mockAxiosRequest = () => {
+    const mockGoodUrl = GOOD_URL;
+    const mockData = __MOCK_DATA__;
+    const mockResponse = __BAD_RESPONSE__;
+
+    return jest.mock('axios', () => jest.fn((value) => value.url === mockGoodUrl
+        ? Promise.resolve(JSON.stringify(mockData))
+        : Promise.reject(mockResponse)
+    ));
+}
+
 export const mockWindowProperty = (property: string | any, value: any) => {
     const { [property]: originalProperty } = window;
     delete window[property];
