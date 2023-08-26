@@ -1,4 +1,5 @@
-import { StoredValue } from '../model';
+import RequestHandler from '../handler/request-handler';
+import { IRequestData, InterceptorPayload, StoredValue } from '../model';
 
 export const __STORAGE_NAME_PREFIX__ = 'react-http-request';
 interface SaveStoredValueArgs<T> {
@@ -49,4 +50,26 @@ export const saveValueToMemory = <T>(
 ) => {
     const nameValue = `${__STORAGE_NAME_PREFIX__}-${args.name || args.url}`;
     setState((previousValue) => ({ ...previousValue, [nameValue]: args.value }));
+};
+
+export const storeValue = (
+    requestData: IRequestData['data'],
+    payload: InterceptorPayload,
+    requestHandler: RequestHandler
+) => {
+    const { name, setStateData, localStorage, sessionStorage, setRequestUpdate, memoryStorage } =
+        requestHandler.getDependency();
+
+    const valueToStore = {
+        name,
+        url: payload.url,
+        value: { data: requestData, queryParam: payload.queryParams },
+    };
+    if (memoryStorage && setStateData) {
+        saveValueToMemory(valueToStore, setStateData);
+    }
+    if (sessionStorage) saveValueToSession(valueToStore);
+    if (localStorage) saveValueToLocalStorage(valueToStore);
+
+    setRequestUpdate?.((initialValue) => ++initialValue);
 };

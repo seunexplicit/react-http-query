@@ -194,7 +194,7 @@ describe('RequestProvider', () => {
 
     test(`Request provider and useRequest interceptor should intercept and update response 
     properties`, async () => {
-        const responseParamenters = {};
+        const responseParameters = {};
         const appLevelBodyInterceptor = { appExtra: 'interceptor' };
         const componentLevelBodyInterceptor = { componentExtra: 'interceptor_2' };
 
@@ -203,7 +203,7 @@ describe('RequestProvider', () => {
                 useRequest({
                     interceptors: {
                         response: (payload) => {
-                            responseParamenters['method'] = payload.method;
+                            responseParameters['method'] = payload.method;
                             payload.data = { ...payload.data, ...componentLevelBodyInterceptor };
                             return payload;
                         },
@@ -214,7 +214,7 @@ describe('RequestProvider', () => {
                     baseUrl: GOOD_URL,
                     interceptors: {
                         response: (payload) => {
-                            responseParamenters['status'] = payload.status;
+                            responseParameters['status'] = payload.status;
                             payload.data = { ...payload.data, ...appLevelBodyInterceptor };
                             return payload;
                         },
@@ -227,8 +227,8 @@ describe('RequestProvider', () => {
         await act(() => makeRequest(''));
         const [{ data }] = result.current;
 
-        expect(responseParamenters.method).toBe('GET');
-        expect(responseParamenters.status).toBe(200);
+        expect(responseParameters.method).toBe('GET');
+        expect(responseParameters.status).toBe(200);
         expect(data).toStrictEqual({
             ...__MOCK_DATA__,
             ...componentLevelBodyInterceptor,
@@ -266,7 +266,7 @@ describe('RequestProvider', () => {
             wrapper: RequestWrapper({
                 baseUrl: BAD_URL,
                 onError: (errorPayload) => {
-                    errorResponse = errorPayload;
+                    errorResponse = errorPayload.data;
                 },
             }),
         });
@@ -285,8 +285,8 @@ describe('RequestProvider', () => {
             wrapper: RequestWrapper({
                 baseUrl: BAD_URL,
                 popupTimeout: 0.05,
-                onError: (errorPayload) => {
-                    return <MessagePopup message={errorPayload.body?.message}></MessagePopup>;
+                onError: ({ data }) => {
+                    return <MessagePopup message={data.body?.message}></MessagePopup>;
                 },
             }),
         });
@@ -300,6 +300,26 @@ describe('RequestProvider', () => {
         });
     });
 
+    test('should not show error popup if `showError` is set to `false`', async () => {
+        const {
+            result: {
+                current: [, makeRequest],
+            },
+        } = renderHook(() => useRequest(), {
+            wrapper: RequestWrapper({
+                baseUrl: BAD_URL,
+                popupTimeout: 0.05,
+                onError: ({ data }) => {
+                    return <MessagePopup message={data.body?.message}></MessagePopup>;
+                },
+            }),
+        });
+
+        await act(() => makeRequest('', { showError: false }));
+
+        expect(screen.queryByText(__BAD_RESPONSE__.body.message)).toBe(null);
+    });
+
     test('should call `RequestProvider` `onSuccess` callback when request succeed', async () => {
         let successResponse = {};
 
@@ -311,7 +331,7 @@ describe('RequestProvider', () => {
             wrapper: RequestWrapper({
                 baseUrl: GOOD_URL,
                 onSuccess: (successPayload) => {
-                    successResponse = successPayload;
+                    successResponse = successPayload.data;
                 },
             }),
         });
@@ -332,7 +352,7 @@ describe('RequestProvider', () => {
                 baseUrl: GOOD_URL,
                 popupTimeout: 0.05,
                 onSuccess: (successPayload) => {
-                    return <MessagePopup message={successPayload.body.data.message}></MessagePopup>;
+                    return <MessagePopup message={successPayload.data?.body.data.message}></MessagePopup>;
                 },
             }),
         });
@@ -346,15 +366,7 @@ describe('RequestProvider', () => {
         });
     });
 
-    test('should show loader component, if loader component is returned in loading callback', async () => {
-        const loadingMessage = 'loading...';
-        let loadingState = false;
-
-        fetchMock.mockResponse(async () => {
-            await delay(10);
-            return {};
-        });
-
+    test('should not show success popup if `showSuccess` is set to `false`', async () => {
         const {
             result: {
                 current: [, makeRequest],
@@ -362,25 +374,89 @@ describe('RequestProvider', () => {
         } = renderHook(() => useRequest(), {
             wrapper: RequestWrapper({
                 baseUrl: GOOD_URL,
-                onLoading: (loading) => {
-                    loadingState = loading;
-                    return <MessagePopup message={loadingMessage}></MessagePopup>;
+                popupTimeout: 0.05,
+                onSuccess: (successPayload) => {
+                    return <MessagePopup message={successPayload.data?.body.data.message}></MessagePopup>;
                 },
             }),
         });
 
-        act(() => {
-            makeRequest('');
+        await act(() => makeRequest('', { showSuccess: false }));
+
+        expect(screen.queryByText(__MOCK_DATA__.body.data.message)).not.toBeInTheDocument();
+    });
+
+    describe('Showing loader popup', () => {
+        const loadingMessage = 'loading...';
+
+        beforeEach(() => {
+            fetchMock.mockResponse(async () => {
+                await delay(10);
+                return {};
+            });
         });
 
-        expect(loadingState).toBe(true);
-        expect(await screen.findByText(loadingMessage)).toBeInTheDocument();
+        afterEach(() => {
+            fetchMock.resetMocks();
+        });
 
-        jest.advanceTimersByTime(20);
 
-        await waitFor(() => {
+        test('should show loader component, if loader component is returned in loading callback', async () => {
+            let loadingState = false;
+
+            const {
+                result: {
+                    current: [, makeRequest],
+                },
+            } = renderHook(() => useRequest(), {
+                wrapper: RequestWrapper({
+                    baseUrl: GOOD_URL,
+                    onLoading: (loading) => {
+                        loadingState = loading;
+                        return <MessagePopup message={loadingMessage}></MessagePopup>;
+                    },
+                }),
+            });
+
+            act(() => {
+                makeRequest('');
+            });
+
+            expect(loadingState).toBe(true);
+            expect(await screen.findByText(loadingMessage)).toBeInTheDocument();
+
+            jest.advanceTimersByTime(20);
+
+            await waitFor(() => {
+                expect(screen.queryByText(loadingMessage)).not.toBeInTheDocument();
+            });
+            expect(loadingState).toBe(false);
+        });
+
+        test('should show not loader component, if `showLoader` is set to `false`', async () => {
+            let loadingState = false;
+
+            const {
+                result: {
+                    current: [, makeRequest],
+                },
+            } = renderHook(() => useRequest(), {
+                wrapper: RequestWrapper({
+                    baseUrl: GOOD_URL,
+                    onLoading: (loading) => {
+                        loadingState = loading;
+                        return <MessagePopup message={loadingMessage}></MessagePopup>;
+                    },
+                }),
+            });
+
+            act(() => {
+                makeRequest('', { showLoader: false });
+            });
+
+            expect(loadingState).toBe(true);
             expect(screen.queryByText(loadingMessage)).not.toBeInTheDocument();
         });
-        expect(loadingState).toBe(false);
-    });
+    })
+
 });

@@ -1,19 +1,16 @@
+import { makeAxiosRequest } from '../helpers/axios-request';
 import createFormData from '../helpers/create-form-data';
+import { makeFetchRequest } from '../helpers/fetch-request';
 import objectDeepEqual from '../helpers/object-deep-equal';
 import {
-    fetchRequest,
     generatePath,
     getEnumerableProperties,
+    getErrorMessage,
     getInitialState,
     getRequestAbortter,
     requestHeaderBuilder,
 } from '../helpers/request.helper';
-import {
-    retrieveStoredValue,
-    saveValueToLocalStorage,
-    saveValueToMemory,
-    saveValueToSession,
-} from '../helpers/stored-value-management';
+import { retrieveStoredValue, storeValue } from '../helpers/stored-value-management';
 import {
     BodyRequestPayload,
     FormDataRequestPayload,
@@ -21,26 +18,32 @@ import {
     HandlerDependency,
     InterceptorPayload,
     InterceptorResponsePayload,
+    IRequestData,
     IRequestHandler,
     IResponse,
     MakeRequest,
     RequestMethod,
 } from '../model';
 
-export default class RequestHandler<T> implements IRequestHandler<T> {
+type StateSetter<T> = React.Dispatch<React.SetStateAction<[IResponse<T>, MakeRequest<T>]>>;
+
+export default class RequestHandler<T = any> implements IRequestHandler<T> {
     private dependency: HandlerDependency<T> = {
         stateData: {},
     };
 
     private responsePayload: IResponse<T> = { ...getInitialState };
     private retryCount = 1;
+    private stateSetter: StateSetter<T> | null = null;
 
-    constructor(
-        private setRequestState: React.Dispatch<React.SetStateAction<[IResponse<T>, MakeRequest<T>]>>
-    ) {}
+    constructor() {}
 
     setDependency(dependency: typeof this.dependency) {
         this.dependency = { ...this.dependency, ...dependency };
+    }
+
+    getDependency() {
+        return this.dependency;
     }
 
     private isLoading() {
@@ -48,151 +51,166 @@ export default class RequestHandler<T> implements IRequestHandler<T> {
     }
 
     get requestMethod(): RequestMethod {
-        return this.dependency.method || (this.dependency.body || this.dependency.formData ? 'POST' : 'GET');
+        const { method, body, formData } = this.dependency.requestConfig ?? {};
+
+        return method || ((body || formData) ? 'POST' : 'GET');
     }
 
     get requestUrl(): string {
         return generatePath(
             this.dependency.path ?? '',
             this.dependency.baseUrl || this.dependency.appLevelBaseUrl,
-            this.dependency.isRelative
+            this.dependency.requestConfig?.isRelative
         );
     }
 
     private get requestHeader(): Record<string, string> {
         const [headers, overridesHeaders] = requestHeaderBuilder(
-            this.dependency.bearer ?? true,
+            this.dependency.requestConfig?.bearer ?? true,
             this.dependency.authToken,
-            this.dependency.header
+            this.dependency.requestConfig?.header
         );
 
-        !overridesHeaders && this.dependency.formData && delete headers['Content-Type'];
+        console.log({ headers, overridesHeaders });
+        !overridesHeaders && this.dependency.requestConfig?.formData && delete headers['Content-Type'];
         return headers;
     }
 
     private get requestPayload(): InterceptorPayload {
-        const formData = this.dependency.formData && createFormData(this.dependency.formData);
+        const formData =
+            this.dependency.requestConfig?.formData &&
+            createFormData(this.dependency.requestConfig?.formData);
 
         return {
             headers: this.requestHeader,
             method: this.requestMethod,
-            queryParams: this.dependency.query,
+            queryParams: this.dependency.requestConfig?.query,
             url: this.requestUrl,
-            body: formData ?? this.dependency.body,
+            body: formData ?? this.dependency.requestConfig?.body,
         };
     }
 
-    private async getResponse(response: Response): Promise<InterceptorResponsePayload> {
-        const responseBody = JSON.parse((await response.text()) || '{}');
+    private refetch() {
+        return this.makeRequest(this.dependency.path ?? '', this.dependency.requestConfig);
+    }
 
+    private async getResponse(response: IRequestData): Promise<InterceptorResponsePayload> {
         return Object.defineProperties(
             {},
             {
                 url: getEnumerableProperties(this.requestUrl),
                 method: getEnumerableProperties(this.requestMethod),
-                status: getEnumerableProperties(response.status),
-                data: getEnumerableProperties(responseBody, true),
-                queryParams: getEnumerableProperties(this.dependency.query),
+                status: getEnumerableProperties(response.data?.status),
+                data: getEnumerableProperties(response.data?.data, true),
+                headers: getEnumerableProperties(response.data?.headers),
+                statusText: getEnumerableProperties(response.data?.statusText),
+                queryParams: getEnumerableProperties(this.dependency.requestConfig?.query),
             }
         ) as InterceptorResponsePayload;
     }
 
-    private setSuccessResponse(data: any, message: string = '') {
+    private setSuccessResponse({ data }: IRequestData) {
+        const { requestConfig } = this.dependency;
+
         this.responsePayload = {
             ...this.responsePayload,
-            data,
-            message: this.dependency.successMessage || (data as any).message || message,
+            data: data.data,
+            status: data.status,
+            message: requestConfig?.successMessage ?? data?.data?.message ?? data.statusText,
             loading: false,
             success: true,
             error: false,
+            refetch: this.refetch.bind(this),
         };
 
-        this.setRequestState((initialState) => {
-            Object.assign(initialState, { 0: this.responsePayload });
-            return initialState;
-        });
+        this.stateSetter?.((initialState) => [this.responsePayload, initialState[1]]);
+
         this.dependency.dispatchLoadingState?.(false);
-        this.dependency.dispatchSuccessRequest?.(data);
+        this.dependency.dispatchSuccessRequest?.(data, requestConfig?.showSuccess);
         this.dependency.onSuccess?.(data);
     }
 
-    private setErrorResponse(data: any, message: string = '') {
+    setStateSetter(stateSetter: StateSetter<T>) {
+        this.stateSetter = stateSetter;
+    }
+
+    private setErrorResponse({ data }: IRequestData) {
         this.responsePayload = {
             ...this.responsePayload,
-            data,
-            message:
-                this.dependency.errorMessage ||
-                data?.error ||
-                data?.message ||
-                data?.error?.message ||
-                data?.error?.error ||
-                message,
+            data: data?.data,
+            status: data?.status,
+            message: getErrorMessage(data?.data ?? data, this.dependency),
             loading: false,
             success: false,
             error: true,
+            refetch: this.refetch.bind(this),
         };
 
-        this.setRequestState((initialState) => {
-            Object.assign(initialState, { 0: this.responsePayload });
-            return initialState;
-        });
+        this.stateSetter?.((initialState) => [this.responsePayload, initialState[1]]);
+
         this.dependency.dispatchLoadingState?.(false);
-        this.dependency.dispatchErrorRequest?.(data);
+        this.dependency.dispatchErrorRequest?.(data, this.dependency.requestConfig?.showError);
         this.dependency.onError?.(data);
     }
 
     private async initRequest() {
+        const {
+            appLevelInterceptor: { request: appRequestInterceptor, response: appResponseInterceptor } = {},
+            interceptors: {
+                request: componentRequestInterceptor,
+                response: componentResponseInterceptor,
+            } = {},
+            axiosInstance,
+            requestConfig,
+            appLevelTimeout,
+        } = this.dependency;
+
         try {
-            this.dependency.dispatchLoadingState?.(true);
+            this.dependency.dispatchLoadingState?.(true, requestConfig?.showLoader);
             this.isLoading();
 
             // if response was cached return cached response.
-            if (!this.dependency.forceRefetch) {
-                const storedValue = retrieveStoredValue<T>(
+            if (!requestConfig?.forceRefetch) {
+                const storedValue = retrieveStoredValue<IRequestData>(
                     this.requestUrl,
                     this.dependency.stateData,
                     this.dependency.name
                 );
-                if (storedValue && objectDeepEqual(storedValue.queryParam, this.dependency.query)) {
+                if (storedValue && objectDeepEqual(storedValue.queryParam, requestConfig?.query)) {
                     this.setSuccessResponse(storedValue.data);
                     return;
                 }
             }
 
             let payload = this.requestPayload;
-            payload = this.dependency.appLevelInterceptor?.request?.(payload) ?? payload;
-            payload = this.dependency.interceptors?.request?.(payload) ?? payload;
+            payload = (await appRequestInterceptor?.(payload)) ?? payload;
+            payload = (await componentRequestInterceptor?.(payload)) ?? payload;
 
             const { controller, timeoutRef } =
-                getRequestAbortter(this.dependency.timeout ?? this.dependency.appLevelTimeout) ?? {};
-            const response = await fetchRequest(payload, this.dependency, controller);
+                getRequestAbortter(requestConfig?.timeout ?? appLevelTimeout) ?? {};
+
+            const response = await (axiosInstance
+                ? makeAxiosRequest(axiosInstance, payload, this.dependency, controller)
+                : makeFetchRequest(payload, this.dependency, controller));
 
             if (timeoutRef) clearTimeout(timeoutRef);
+            if (response.error && response.retry && this.retryCount > 1) {
+                throw new Error(response.data?.statusText ?? 'An error occur');
+            }
 
             const responsePayload = await this.getResponse(response);
 
             responsePayload.data =
-                this.dependency.appLevelInterceptor?.response?.(responsePayload)?.data ??
-                responsePayload?.data;
+                (await appResponseInterceptor?.(responsePayload))?.data ?? responsePayload?.data;
             responsePayload.data =
-                this.dependency.interceptors?.response?.(responsePayload)?.data ?? responsePayload?.data;
+                (await componentResponseInterceptor?.(responsePayload))?.data ?? responsePayload?.data;
 
-            if (response.ok) {
-                const valueToStore = {
-                    name: this.dependency.name,
-                    url: payload.url,
-                    value: { data: responsePayload.data, queryParam: payload.queryParams },
-                };
-                if (this.dependency.memoryStorage && this.dependency.setStateData) {
-                    saveValueToMemory(valueToStore, this.dependency.setStateData);
-                }
-                if (this.dependency.sessionStorage) saveValueToSession(valueToStore);
-                if (this.dependency.localStorage) saveValueToLocalStorage(valueToStore);
+            if (response.error) this.setErrorResponse(response);
+            else {
+                const requestData = { ...response.data, data: responsePayload.data };
+                storeValue(requestData, payload, this);
 
-                this.dependency.setRequestUpdate?.((initialValue) => ++initialValue);
-                this.setSuccessResponse(responsePayload.data, response.statusText);
-            } else {
-                this.setErrorResponse(responsePayload);
+                this.setSuccessResponse({ ...response, data: requestData });
             }
         } catch (err: any) {
             if (this.retryCount > 1) {
@@ -200,17 +218,29 @@ export default class RequestHandler<T> implements IRequestHandler<T> {
                 await this.initRequest();
             }
 
-            this.setErrorResponse(err, 'An error occur.');
+            this.setErrorResponse({
+                data: {
+                    data: err,
+                    statusText: err.statusText ?? err.message,
+                    status: err.status ?? 0,
+                },
+                error: true,
+            });
         }
     }
 
     async makeRequest(
         path: string,
-        config?: GetRequestPayload | BodyRequestPayload | FormDataRequestPayload
+        config: GetRequestPayload | BodyRequestPayload | FormDataRequestPayload = {}
     ) {
         // Stop concurrent requests
         if (!this.responsePayload.loading) {
-            this.dependency = { ...this.dependency, ...config, path };
+            this.dependency = {
+                ...this.dependency,
+                requestConfig: config as FormDataRequestPayload,
+                path,
+            };
+
             this.retryCount = config?.retries || this.retryCount;
             await this.initRequest();
         }

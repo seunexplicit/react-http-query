@@ -6,4 +6,13 @@ export default {
         '^.+\\.module\\.(css|sass|scss)$',
     ],
     resetMocks: false,
+    collectCoverage: true,
+    collectCoverageFrom: ["<rootDir>/lib/**/*.{js,ts,tsx}"],
+    coverageThreshold: {
+      "global": {
+        lines: 90,
+        statements: 90,
+        functions: 90
+      }
+    }
 };

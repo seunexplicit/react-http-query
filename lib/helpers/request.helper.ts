@@ -1,5 +1,4 @@
-import queryBuilder from './query-builder';
-import { HandlerDependency, InterceptorPayload, RequestHeader } from '../model';
+import { HandlerDependency, RequestHeader } from '../model';
 
 /**
  * Checks if a string is an absolute url or a path
@@ -38,8 +37,10 @@ export const generatePath = (
 };
 
 const concatBasePath = (path: string, baseUrl: string | undefined) => {
+    const base = baseUrl ?? '';
+
     return (
-        (baseUrl?.charAt(baseUrl?.length - 1) === '/' ? baseUrl : `${baseUrl}/`) +
+        (base?.charAt(base?.length - 1) === '/' ? base : `${base}/`) +
         (path.charAt(0) === '/' ? path.substring(1) : path)
     );
 };
@@ -58,9 +59,8 @@ export const requestHeaderBuilder = (
     headerProps?: RequestHeader
 ): [Record<string, string>, boolean] => {
     const headers: Record<string, string> = {};
-    const headerPropsKey = Object.keys(headerProps || {});
-    const overridesHeaders =
-        !!headerPropsKey.length && (headerPropsKey.length > 1 || headerPropsKey[0] !== 'append');
+    const headerPropsKey = Object.keys(headerProps ?? {});
+    const overridesHeaders = !!headerPropsKey.length && headerPropsKey[0] !== 'append';
 
     if (!overridesHeaders) {
         Object.assign(headers, {
@@ -91,37 +91,23 @@ export const getRequestAbortter = (timeout?: number) => {
     return { controller, timeoutRef };
 };
 
-export const fetchRequest = <T>(
-    payload: InterceptorPayload,
-    config?: HandlerDependency<T>,
-    controller?: AbortController
-) => {
-    return fetch(`${payload.url}${queryBuilder(payload.queryParams)}`, {
-        headers: payload.headers,
-        method: payload.method,
-        ...getProperty('mode', config),
-        ...getProperty('cache', config),
-        ...getProperty('window', config),
-        ...getProperty('redirect', config),
-        ...getProperty('referrer', config),
-        ...getProperty('integrity', config),
-        ...getProperty('keepalive', config),
-        ...getProperty('signal', controller),
-        ...getProperty('credentials', config),
-        ...getProperty('referrerPolicy', config),
-        body:
-            payload.body instanceof Blob ||
-            typeof payload.body === 'string' ||
-            ArrayBuffer.isView(payload.body) ||
-            payload.body instanceof FormData ||
-            payload.body instanceof ArrayBuffer ||
-            payload.body instanceof URLSearchParams
-                ? payload.body
-                : payload.body && JSON.stringify(payload.body),
-    });
-};
+export const getProperty = <T>(key: keyof T, payload?: T) =>
+    payload?.[key] !== undefined && { [key]: payload[key] };
 
-const getProperty = (key: string, payload?: any) => payload?.[key] !== undefined && { [key]: payload[key] };
+export const getErrorMessage = (data: any, config?: HandlerDependency) => {
+    if (config?.requestConfig?.errorMessage) return config.requestConfig.errorMessage;
+
+    const errorInstance = data?.response ?? data;
+
+    return (
+        errorInstance?.error?.message ??
+        errorInstance?.error?.error ??
+        errorInstance?.error ??
+        errorInstance?.data?.message ??
+        errorInstance?.message ??
+        errorInstance?.statusText
+    );
+};
 
 export const getInitialState = {
     loading: false,
@@ -130,6 +116,7 @@ export const getInitialState = {
     data: null,
     message: '',
     status: null,
+    refetch: () => Promise.resolve(null),
 };
 
 export const getEnumerableProperties = (value: unknown, writable: boolean = false) => ({

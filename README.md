@@ -1,3 +1,6 @@
+## Description
+A simple React Query library that utilizes the `window.fetch` request function by default. It also supports providing an `axios` instance to replace the default `window.fetch`.  
+
 ## Table of contents
 - [Simple Usage](#simple-usage)
 - [makeRequest](#makeRequest)
@@ -66,8 +69,11 @@ const [{}, makeRequest] = useRequest();
 | isRelative | It specify that the `url` passed to `makeRequest` is a relative path and force the base URL passed to either `useRequest` hook or `RequestProvider` to be prepend to the `makeRequest` function `url` regardless of if it is an absolute url or a relative path. There would most likely not be a need to set this property, as the library can determine whether to use the baseUrl based on what is passed to the `makeRequest` function. | `boolean` | `false` |
 | errorMessage | Request error message. The library tries to get the error message from the response payload and returns it in the state message prop, but this override any error message gotten from the response payload | `string` |     |
 | successMessage | Response success message. The library tries to get the success message from the response payload and returns it in the state message prop, but this override any success message gotten from the response payload | `string` |   |
-| headers  | Request headers. If the headers property is passed to the headers `append` it append it to any generated headers by the library otherwise it will override any generated header |  |   | 
+| header  | Request headers. If the headers property is passed to the headers `append` it append it to any generated headers by the library otherwise it will override any generated header |  |   | 
 | query  | Request query parameters. An object that receives the query parameters and it values. It adds any assigned value the request url as query parameters | `object` |   |
+| showSuccess  | Determines whether to display a success alert for a specific request if a success alert is returned in `RequestProvider.onSuccess` | `boolean` | `true`  | 
+| showError  | Determines whether to display an error alert for a specific request if an error alert is returned in `RequestProvider.onError` | `boolean` | `true` |
+| showLoader  | Determines whether to display a loader for a specific request if loader component is returned in `RequestProvider.onLoading` | `boolean` | `true`  |
 
 ### Usage Examples
 ### GET
@@ -161,13 +167,16 @@ The `useRequest` hook provides the request metadata which are:
 |  ---  |  ---  |
 |  name  | The name of the request. This should be a unique identifier, different from any other name given to other request in your application. It is used to retrieve request data stored in the application `state`, `localStorage` or `sessionStorage`.  |
 |  baseUrl | The base URL of requests made by the `makeRequest` function. `makeRequest` can be provided with path instead of absolute url, if the `baseUrl` is assigned a value.  |
-|  onSuccess  | A callback function that is called when the request succeeds. The request's response data is passed down to it. The callback can be used to perform any required operations when the request succeeds.  |
+|  onSuccess  | A callback function that gets invoked when the request succeed. It receives the request's metadata, which includes the response body. This callback can be used to perform any necessary operations when the request succeeds.  |
 |  onMount  | A callback function that is called once your component mounts, it returns a `makeRequest` function as an argument, that could be used to make a request on mount of the components.  |
-|  onError  | A callback function that is called when the request fails. The request's response error body is passed down to it. The callback can be used to perform any required operations when the request fails.  |
+|  onError  | A callback function that gets invoked when the request fails. It receives the request's metadata, which includes the error body. This callback can be used to perform any necessary operations when the request encounters an error.  |
 | interceptors  | This allow request to be intercepted at the component level before the call is being made or  before the response are being passed to the component state. It allows two optional function parameters, which are `response` and `request`. See more about [intercpetors](#interceptors)  |
 |  localStorage | A `Boolean` value that determines if the request's response data should be stored in local storage. The stored value can be retrieved from any part of the application using the `useRequestData` with the `name` property.  |
 | sessionStorage | A `Boolean` value that determines if the request's response data should be stored in session storage. The stored value can be retrieved from any part of the application using the `useRequestData` with the `name` property.  |
 |  memoryStorage  | A `Boolean` value that determines if the request's response data should be stored in the application memory(state). A browser refresh would cause the data stored to be lost, except the request is made again. The stored value can be retrieved from any part of the application using the `useRequestData` with the `name` property.  |
+| onUploadProgress | A `Function` that recieves progress events for uploads. @note available only when axios is provided in the `RequestProvider`. |
+| onDownloadProgress | A `Function` that recieves progress events for downloads. @note available only when axios is provided in the `RequestProvider`.  |
+| validateStatus | `validateStatus` defines whether to resolve or reject the promise for a given HTTP response status code. @note available only when axios is provided in the `RequestProvider`.  |
 ### Usage Examples
 ```jsx
 import { useRequest } from 'react-http-query';
@@ -178,9 +187,23 @@ const App = () => {
         name: 'user-profile',
         baseUrl: 'https://example.com',
         onSuccess: (response) => {
-            navigate(`/dashboard/${response.data.id}`);
+            /**
+             * response data details
+             * `statusText`: Request status text.
+             * `headers`: Request headers.
+             * `data`: Request response data.
+             * `status`: Request status code.
+             */
+            navigate(`/dashboard/${response.data.data.id}`);
         },
         onError: (error) => {
+            /**
+             * error data details
+             * `statusText`: Request status text.
+             * `headers`: Request headers.
+             * `data`: Request response data.
+             * `status`: Request status code.
+             */
             showToast(error.message);
             setEnableButton(true);
         },
@@ -236,6 +259,7 @@ The request provider provides a powerful means of managing/configuring all appli
 | onLoading | A callback function that is called when any request loading state changes. A loader component can be returned to be rendered when loading is `true`. |  |
 | popupTimeout | Display timeout in `seconds` for error or success popup returned in onError or onSuccess callback respectively. | `8s` |
 | interceptors  | This allow request to be intercepted at the app level before the call is being made or  before the response are being passed to the component state. It allows two optional function parameters, which are `response` and `request`. See more about [intercpetors](#interceptors)  |  |
+| axiosInstance  | An Axios request instance. This library enables you to supply an axiosInstance, which will be utilized for making requests instead of the default underlying fetch function. When provided, `onDownloadProgress` and `onUploadProgress` can be used in conjunction with `useRequest`  |  |
 ### Usage Examples
 ```js
 import { useRequest, RequestProvider } from 'react-http-query';

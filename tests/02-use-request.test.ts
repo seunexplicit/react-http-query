@@ -14,6 +14,7 @@ import fetchMock from 'jest-fetch-mock';
 import { useRequest } from '../lib';
 import StorageMock from './mock-storage';
 import { useEffect } from 'react';
+import { MakeRequest } from '../lib/model';
 
 fetchMock.enableMocks();
 
@@ -34,7 +35,7 @@ describe('useRequest', () => {
         const { result } = renderHook(() =>
             useRequest({
                 onSuccess: (response) => {
-                    responsePayload = response;
+                    responsePayload = response.data;
                 },
             })
         );
@@ -64,10 +65,12 @@ describe('useRequest', () => {
     });
 
     test('should not make cyclic call when in strictmode', async () => {
+        let requestFn: MakeRequest<any>;
+
         renderHook(
             () => {
                 const [, makeSecondRequest] = useRequest({
-                    onMount: async (makeRequest) => await act(() => makeRequest(GOOD_URL)),
+                    onMount: (makeRequest) => { requestFn = makeRequest; },
                 });
                 useEffect(() => {
                     makeSecondRequest(GOOD_URL);
@@ -76,6 +79,7 @@ describe('useRequest', () => {
             { wrapper: StrictMode }
         );
 
+        await act(async () => await requestFn(GOOD_URL))
         expect(fetchMock).toBeCalledTimes(1);
     });
 
@@ -85,7 +89,7 @@ describe('useRequest', () => {
         const { result } = renderHook(() =>
             useRequest({
                 onError: (error) => {
-                    errorPayload = error;
+                    errorPayload = error.data;
                 },
             })
         );
@@ -94,6 +98,22 @@ describe('useRequest', () => {
         await act(() => makeRequest(BAD_URL));
 
         expect(errorPayload).toStrictEqual(__BAD_RESPONSE__);
+    });
+
+    test('should refetch request when `refetch` is called', async () => {
+        const { result } = renderHook(() =>
+            useRequest()
+        );
+
+        const [, makeRequest] = result.current;
+        await act(() => makeRequest(GOOD_URL));
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+
+        const [{ refetch }] = result.current;
+        await act(async () => await refetch());
+        
+        expect(fetchMock).toBeCalledTimes(2)
+        expect(fetchMock).toHaveBeenCalledWith(GOOD_URL, expect.objectContaining({ method: 'GET' }));
     });
 
     test('should intercept and update request method', async () => {
