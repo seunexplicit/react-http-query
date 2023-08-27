@@ -204,7 +204,7 @@ const App = () => {
              * `data`: Request response data.
              * `status`: Request status code.
              */
-            showToast(error.message);
+            showToast(error.data.message);
             setEnableButton(true);
         },
         localStorage: true,
@@ -294,7 +294,7 @@ const App = () => {
             baseUrl="https://www.example.com"
             authToken={authToken}
             onError={(error) => {
-                return <Toast message={error.message} />
+                return <Toast message={error.data.message} />
             }}
             interceptors={{
                 request: (payload) => ({
