@@ -67,9 +67,7 @@ const [{}, makeRequest] = useRequest();
 | timeout | Request allowed duration in `milliseconds`. When request duration exceeds this value, the request will be aborted. | `number` |   |
 | forceRefetch | It determines if stored/cached value by request, should be returned or new data should be fetched from server  | `boolean` |  `false` |
 | isRelative | It specify that the `url` passed to `makeRequest` is a relative path and force the base URL passed to either `useRequest` hook or `RequestProvider` to be prepend to the `makeRequest` function `url` regardless of if it is an absolute url or a relative path. There would most likely not be a need to set this property, as the library can determine whether to use the baseUrl based on what is passed to the `makeRequest` function. | `boolean` | `false` |
-| errorMessage | Request error message. The library tries to get the error message from the response payload and returns it in the state message prop, but this override any error message gotten from the response payload. It is `deprecated`, use `metadata` to set the `errorMessage` instead. | `string` |     |
-| successMessage | Response success message. The library tries to get the success message from the response payload and returns it in the state message prop, but this override any success message gotten from the response payload. It is `deprecated`, use `metadata` to set the `successMessage` instead. | `string` |   |
-| metadata | Holds any data that needs to be made available in any of the listed request callbacks. callbacks: `onSuccess`, `onError` & `interceptors` | `object` |   |
+| metadata | This is an object where you can add any request metadata or information that is needed to be used elsewhere, so the content of this metadata will be made available in any of the listed request callbacks. Callbacks: `onSuccess`, `onError` & `interceptors` | `object` |   |
 | header  | Request headers. If the headers property is passed to the headers `append` it append it to any generated headers by the library otherwise it will override any generated header |  |   | 
 | query  | Request query parameters. An object that receives the query parameters and it values. It adds any assigned value the request url as query parameters | `object` |   |
 | showSuccess  | Determines whether to display a success alert for a specific request if a success alert is returned in `RequestProvider.onSuccess` | `boolean` | `true`  | 
@@ -156,12 +154,12 @@ const [{data, loading, success, error, message}, makeRequest] = useRequest();
 ```
 The `useRequest` hook provides the request metadata which are:
 - Request state
-    - data: `Any` The request returned data.
+    - data: `Any` The data returned from the request.
     - loading: `Boolean` value indicating whether the request is ongoing.
     - success: `Boolean` value indicating if the request succeeded.
     - error: `Boolean` value indicating if the request failed.
     - message: `String` either the error or success message that could be retrieve from the request.
-    - previousData: `Any` The request previous returned data. 
+    - previousData: `Any` The data returned from the previous request. 
     - refetch: `Function` A function that allows you to initiate a network request using the configuration of the most recent network request. It accepts an optional parameter, which represents query parameters. You can provide a partial set of query parameters, and these will be merged with the initial query parameters. When refetched is called, cached response from previous network request would be disregarded & a new network request would be made.
 - makeRequest: The function used to initiate the request.
 ### Parameter Properties
