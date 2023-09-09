@@ -48,6 +48,23 @@ describe('makeRequest', () => {
         expect(fetch).toBeCalled();
     });
 
+    test('should hold data of previous response data of request ', async () => {
+        const { result } = renderHook(useRequest, { initialProps: {}});
+
+        const [, makeRequest] = result.current;
+        await act(() => makeRequest(GOOD_URL));
+        const [{ data, previousData }] = result.current;
+
+        expect(data).toStrictEqual(__MOCK_DATA__);
+        expect(previousData).toBeNull();
+
+        await act(() => makeRequest(BAD_URL));
+        const [{ data: secondData, previousData: secondPreviousData }] = result.current;
+
+        expect(secondData).toStrictEqual(__BAD_RESPONSE__);
+        expect(secondPreviousData).toStrictEqual(__MOCK_DATA__);
+    });
+
     test('`makeRequest` should not cause multiple rerendering of component', async () => {
         jest.useRealTimers()
         const spyFunc = jest.fn();
@@ -241,5 +258,72 @@ describe('makeRequest', () => {
         await act(() => makeRequest(GOOD_URL, { timeout: 50, retries: 3 }));
 
         expect(mockedFetch).toBeCalledTimes(3);
+    });
+
+    test('should return the metadata provided in the `makeRequest`', async () => {
+        const { result } = renderHook(useRequest, {
+            initialProps: {},
+        });
+
+        const metadata = { message: 'one', func: (num: number) => num + num }
+        const [, makeRequest] = result.current;
+        await act(() => makeRequest(GOOD_URL, { metadata }));
+
+        const [{ metadata: retMetadata }] = result.current
+
+        expect(retMetadata).toStrictEqual(metadata);
+        expect(retMetadata?.func(2)).toBe(4);
+    });
+
+    test('should return `successMessage` provided in makeRequest', async () => {
+        const { result } = renderHook(useRequest, {
+            initialProps: {},
+        });
+
+        const [, makeRequest] = result.current;
+        await act(() => makeRequest(GOOD_URL, { successMessage: 'successMesaage' }));
+
+        const [{ message }] = result.current
+        
+        expect(message).toBe('successMesaage');
+    });
+
+    test('should return `metadata` `successMessage` provided in makeRequest', async () => {
+        const { result } = renderHook(useRequest, {
+            initialProps: {},
+        });
+
+        const [, makeRequest] = result.current;
+        await act(() => makeRequest(GOOD_URL, { metadata: { successMessage: 'metaSuccessMesaage' }}));
+
+        const [{ message }] = result.current
+        
+        expect(message).toBe('metaSuccessMesaage');
+    });
+
+    test('should return `errorMessage` provided in makeRequest', async () => {
+        const { result } = renderHook(useRequest, {
+            initialProps: {},
+        });
+
+        const [, makeRequest] = result.current;
+        await act(() => makeRequest(BAD_URL, { errorMessage: 'errorMessage' }));
+
+        const [{ message }] = result.current
+        
+        expect(message).toStrictEqual('errorMessage');
+    });
+
+    test('should return metadata `errorMessage` provided in makeRequest', async () => {
+        const { result } = renderHook(useRequest, {
+            initialProps: {},
+        });
+
+        const [, makeRequest] = result.current;
+        await act(() => makeRequest(BAD_URL, { metadata: { errorMessage: 'metaErrorMessage' }}));
+
+        const [{ message }] = result.current
+        
+        expect(message).toStrictEqual('metaErrorMessage');
     });
 });

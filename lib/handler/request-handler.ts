@@ -1,16 +1,16 @@
-import { makeAxiosRequest } from '../helpers/axios-request';
 import createFormData from '../helpers/create-form-data';
-import { makeFetchRequest } from '../helpers/fetch-request';
 import objectDeepEqual from '../helpers/object-deep-equal';
+import { getErrorMessage, getSuccessMessage } from '../helpers/get-messages';
+import { makeAxiosRequest } from '../helpers/axios-request';
+import { makeFetchRequest } from '../helpers/fetch-request';
+import { retrieveStoredValue, storeValue } from '../helpers/stored-value-management';
 import {
     generatePath,
     getEnumerableProperties,
-    getErrorMessage,
     getInitialState,
     getRequestAbortter,
     requestHeaderBuilder,
 } from '../helpers/request.helper';
-import { retrieveStoredValue, storeValue } from '../helpers/stored-value-management';
 import {
     BodyRequestPayload,
     FormDataRequestPayload,
@@ -23,20 +23,20 @@ import {
     IResponse,
     MakeRequest,
     RequestMethod,
+    RequestPayload,
 } from '../model';
 
 type StateSetter<T> = React.Dispatch<React.SetStateAction<[IResponse<T>, MakeRequest<T>]>>;
 
 export default class RequestHandler<T = any> implements IRequestHandler<T> {
     private dependency: HandlerDependency<T> = {
+        requestConfig: {},
         stateData: {},
     };
 
     private responsePayload: IResponse<T> = { ...getInitialState };
     private retryCount = 1;
     private stateSetter: StateSetter<T> | null = null;
-
-    constructor() {}
 
     setDependency(dependency: typeof this.dependency) {
         this.dependency = { ...this.dependency, ...dependency };
@@ -51,9 +51,9 @@ export default class RequestHandler<T = any> implements IRequestHandler<T> {
     }
 
     get requestMethod(): RequestMethod {
-        const { method, body, formData } = this.dependency.requestConfig ?? {};
+        const { method, body, formData } = this.dependency.requestConfig;
 
-        return method || ((body || formData) ? 'POST' : 'GET');
+        return method || (body || formData ? 'POST' : 'GET');
     }
 
     get requestUrl(): string {
@@ -71,27 +71,29 @@ export default class RequestHandler<T = any> implements IRequestHandler<T> {
             this.dependency.requestConfig?.header
         );
 
-        console.log({ headers, overridesHeaders });
         !overridesHeaders && this.dependency.requestConfig?.formData && delete headers['Content-Type'];
         return headers;
     }
 
     private get requestPayload(): InterceptorPayload {
-        const formData =
-            this.dependency.requestConfig?.formData &&
-            createFormData(this.dependency.requestConfig?.formData);
+        const { formData, query, body, metadata } = this.dependency.requestConfig;
+        const createdFormData = formData && createFormData(formData);
 
         return {
             headers: this.requestHeader,
             method: this.requestMethod,
-            queryParams: this.dependency.requestConfig?.query,
+            queryParams: query,
             url: this.requestUrl,
-            body: formData ?? this.dependency.requestConfig?.body,
+            body: createdFormData ?? body,
+            metadata: Object.freeze(metadata),
         };
     }
 
-    private refetch() {
-        return this.makeRequest(this.dependency.path ?? '', this.dependency.requestConfig);
+    private refetch(queryParam: RequestPayload['query'] = {}) {
+        return this.makeRequest(this.dependency.path ?? '', {
+            ...this.dependency.requestConfig,
+            query: { ...this.dependency.requestConfig?.query, ...queryParam },
+        } as FormDataRequestPayload);
     }
 
     private async getResponse(response: IRequestData): Promise<InterceptorResponsePayload> {
@@ -109,14 +111,17 @@ export default class RequestHandler<T = any> implements IRequestHandler<T> {
         ) as InterceptorResponsePayload;
     }
 
-    private setSuccessResponse({ data }: IRequestData) {
-        const { requestConfig } = this.dependency;
+    private setSuccessResponse(data: IRequestData['data']) {
+        const { showSuccess, metadata } = this.dependency.requestConfig;
+        const message = getSuccessMessage(data, this.dependency);
 
         this.responsePayload = {
             ...this.responsePayload,
+            previousData: this.responsePayload.data,
+            metadata: Object.freeze(metadata),
             data: data.data,
             status: data.status,
-            message: requestConfig?.successMessage ?? data?.data?.message ?? data.statusText,
+            message,
             loading: false,
             success: true,
             error: false,
@@ -125,9 +130,11 @@ export default class RequestHandler<T = any> implements IRequestHandler<T> {
 
         this.stateSetter?.((initialState) => [this.responsePayload, initialState[1]]);
 
+        const callbackData = { ...data, metadata: Object.freeze(metadata), message };
+
         this.dependency.dispatchLoadingState?.(false);
-        this.dependency.dispatchSuccessRequest?.(data, requestConfig?.showSuccess);
-        this.dependency.onSuccess?.(data);
+        this.dependency.dispatchSuccessRequest?.(callbackData, showSuccess);
+        this.dependency.onSuccess?.(callbackData);
     }
 
     setStateSetter(stateSetter: StateSetter<T>) {
@@ -135,11 +142,16 @@ export default class RequestHandler<T = any> implements IRequestHandler<T> {
     }
 
     private setErrorResponse({ data }: IRequestData) {
+        const { showError, metadata } = this.dependency.requestConfig;
+        const message = getErrorMessage(data?.data ?? data, this.dependency);
+
         this.responsePayload = {
             ...this.responsePayload,
+            previousData: this.responsePayload.data,
             data: data?.data,
             status: data?.status,
-            message: getErrorMessage(data?.data ?? data, this.dependency),
+            metadata: Object.freeze(metadata),
+            message,
             loading: false,
             success: false,
             error: true,
@@ -148,9 +160,11 @@ export default class RequestHandler<T = any> implements IRequestHandler<T> {
 
         this.stateSetter?.((initialState) => [this.responsePayload, initialState[1]]);
 
+        const callbackData = { ...data, metadata: Object.freeze(metadata), message };
+
         this.dependency.dispatchLoadingState?.(false);
-        this.dependency.dispatchErrorRequest?.(data, this.dependency.requestConfig?.showError);
-        this.dependency.onError?.(data);
+        this.dependency.dispatchErrorRequest?.(callbackData, showError);
+        this.dependency.onError?.(callbackData);
     }
 
     private async initRequest() {
@@ -171,7 +185,7 @@ export default class RequestHandler<T = any> implements IRequestHandler<T> {
 
             // if response was cached return cached response.
             if (!requestConfig?.forceRefetch) {
-                const storedValue = retrieveStoredValue<IRequestData>(
+                const storedValue = retrieveStoredValue<IRequestData['data']>(
                     this.requestUrl,
                     this.dependency.stateData,
                     this.dependency.name
@@ -210,7 +224,7 @@ export default class RequestHandler<T = any> implements IRequestHandler<T> {
                 const requestData = { ...response.data, data: responsePayload.data };
                 storeValue(requestData, payload, this);
 
-                this.setSuccessResponse({ ...response, data: requestData });
+                this.setSuccessResponse(requestData);
             }
         } catch (err: any) {
             if (this.retryCount > 1) {

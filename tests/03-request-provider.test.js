@@ -256,7 +256,8 @@ describe('RequestProvider', () => {
     });
 
     test('should call `RequestProvider` `onError` callback when request fails', async () => {
-        let errorResponse = {};
+        let errorPayload = {};
+        const metadata = { errorMessage: 'errorMessage', value: 2 };
 
         const {
             result: {
@@ -265,15 +266,17 @@ describe('RequestProvider', () => {
         } = renderHook(() => useRequest(), {
             wrapper: RequestWrapper({
                 baseUrl: BAD_URL,
-                onError: (errorPayload) => {
-                    errorResponse = errorPayload.data;
+                onError: (error) => {
+                    errorPayload = error;
                 },
             }),
         });
 
-        await act(() => makeRequest(''));
+        await act(() => makeRequest('', { metadata }));
 
-        expect(errorResponse).toStrictEqual(__BAD_RESPONSE__);
+        expect(errorPayload.metadata).toStrictEqual(metadata);
+        expect(errorPayload.message).toBe(metadata.errorMessage);
+        expect(errorPayload.data).toStrictEqual(__BAD_RESPONSE__);
     });
 
     test('should show error popup on request error, if popup is returned in onError callback', async () => {
@@ -298,6 +301,10 @@ describe('RequestProvider', () => {
         await waitFor(() => {
             expect(screen.queryByText(__BAD_RESPONSE__.body.message)).not.toBeInTheDocument();
         });
+
+        await act(() => makeRequest(''));
+
+        expect(await screen.findByText(__BAD_RESPONSE__.body.message)).toBeInTheDocument();
     });
 
     test('should not show error popup if `showError` is set to `false`', async () => {
@@ -321,7 +328,8 @@ describe('RequestProvider', () => {
     });
 
     test('should call `RequestProvider` `onSuccess` callback when request succeed', async () => {
-        let successResponse = {};
+        let successPayload = {};
+        const metadata = { successMessage: 'successMessage', value: 5 };
 
         const {
             result: {
@@ -330,15 +338,18 @@ describe('RequestProvider', () => {
         } = renderHook(() => useRequest(), {
             wrapper: RequestWrapper({
                 baseUrl: GOOD_URL,
-                onSuccess: (successPayload) => {
-                    successResponse = successPayload.data;
+                onSuccess: (success) => {
+                    successPayload = success;
                 },
             }),
         });
 
-        await act(() => makeRequest(''));
+        await act(() => makeRequest('', { metadata }));
 
-        expect(successResponse).toStrictEqual(__MOCK_DATA__);
+        expect(successPayload.data).toStrictEqual(__MOCK_DATA__);
+        expect(successPayload.metadata).toStrictEqual(metadata);
+        expect(successPayload.statusText).toBe('OK');
+        expect(successPayload.message).toBe('successMessage')
     });
 
     test(`should show success popup on request success, if popup is returned in onSuccess 
@@ -384,6 +395,25 @@ describe('RequestProvider', () => {
         await act(() => makeRequest('', { showSuccess: false }));
 
         expect(screen.queryByText(__MOCK_DATA__.body.data.message)).not.toBeInTheDocument();
+    });
+
+    test('should returned cached data when response is already cached', async () => {
+        const { result } = renderHook(() => useRequest({ memoryStorage: true }), {
+            wrapper: RequestWrapper({}),
+        });
+
+        const [, makeRequest] = result.current;
+        await act(() => makeRequest(GOOD_URL));
+        const [{ data }] = result.current;
+
+        expect(fetchMock).toBeCalled();
+        expect(data).toStrictEqual(__MOCK_DATA__);
+
+        await act(() => makeRequest(GOOD_URL));
+        const [{ data: secondData }] = result.current;
+
+        expect(fetchMock).toBeCalledTimes(1);
+        expect(secondData).toStrictEqual(data);
     });
 
     describe('Showing loader popup', () => {
@@ -457,6 +487,6 @@ describe('RequestProvider', () => {
             expect(loadingState).toBe(true);
             expect(screen.queryByText(loadingMessage)).not.toBeInTheDocument();
         });
-    })
+    });
 
 });
