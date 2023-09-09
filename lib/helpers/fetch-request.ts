@@ -1,6 +1,7 @@
 import queryBuilder from './query-builder';
 import { getProperty } from './request.helper';
 import { HandlerDependency, InterceptorPayload, IRequestData } from '../model';
+import { getStatusMessage } from './get-status-message';
 
 export const makeFetchRequest = async <T>(
     payload: InterceptorPayload,
@@ -42,7 +43,7 @@ export const makeFetchRequest = async <T>(
             data: {
                 data: responseBody,
                 status: response.status,
-                statusText: response.statusText,
+                statusText: response.statusText ?? getStatusMessage(response.status),
                 headers: response.headers,
             },
         };

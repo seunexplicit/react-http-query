@@ -1,4 +1,4 @@
-import { HandlerDependency, RequestHeader } from '../model';
+import { RequestHeader } from '../model';
 
 /**
  * Checks if a string is an absolute url or a path
@@ -93,21 +93,6 @@ export const getRequestAbortter = (timeout?: number) => {
 
 export const getProperty = <T>(key: keyof T, payload?: T) =>
     payload?.[key] !== undefined && { [key]: payload[key] };
-
-export const getErrorMessage = (data: any, config?: HandlerDependency) => {
-    if (config?.requestConfig?.errorMessage) return config.requestConfig.errorMessage;
-
-    const errorInstance = data?.response ?? data;
-
-    return (
-        errorInstance?.error?.message ??
-        errorInstance?.error?.error ??
-        errorInstance?.error ??
-        errorInstance?.data?.message ??
-        errorInstance?.message ??
-        errorInstance?.statusText
-    );
-};
 
 export const getInitialState = {
     loading: false,

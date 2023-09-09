@@ -116,6 +116,21 @@ describe('useRequest', () => {
         expect(fetchMock).toHaveBeenCalledWith(GOOD_URL, expect.objectContaining({ method: 'GET' }));
     });
 
+    test('should merge query parameter when `refetch` is called with query parameter', async () => {
+        const { result } = renderHook(() => useRequest());
+
+        const [, makeRequest] = result.current;
+        await act(() => makeRequest(GOOD_URL, { query: { page: 2, offset: 5 }}));
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        expect(fetchMock).toHaveBeenCalledWith(`${GOOD_URL}?page=2&offset=5`, expect.any(Object));
+
+        const [{ refetch }] = result.current;
+        await act(async () => await refetch({ page: 10 }));
+        
+        expect(fetchMock).toBeCalledTimes(2)
+        expect(fetchMock).toHaveBeenCalledWith(`${GOOD_URL}?page=10&offset=5`, expect.any(Object));
+    });
+
     test('should intercept and update request method', async () => {
         const { result } = renderHook(() =>
             useRequest({
@@ -264,7 +279,7 @@ describe('useRequest', () => {
         expect(fetchMock.mock.calls[0][0]).toBe(`${baseUrl}${GOOD_URL}`);
     });
 
-    test('store data in localStorage when `localStorage` prop is set to `true`.', async () => {
+    test('should store data in localStorage when `localStorage` prop is set to `true`.', async () => {
         const requestName = 'local-storage-name';
         const localStorageSpy = jest.spyOn(window.localStorage, 'setItem');
         const {
@@ -284,7 +299,7 @@ describe('useRequest', () => {
         expect(localStorage.key(0)).toContain(requestName);
     });
 
-    test('store data in sessionStorage when `sessionStorage` prop is set to `true`.', async () => {
+    test('should store data in sessionStorage when `sessionStorage` prop is set to `true`.', async () => {
         const requestName = 'session-storage-name';
         const sessionStorageSpy = jest.spyOn(window.sessionStorage, 'setItem');
         const {

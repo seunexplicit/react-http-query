@@ -9,6 +9,7 @@ export interface InterceptorPayload {
     method: RequestMethod;
     url: string;
     queryParams?: Record<string, any>;
+    readonly metadata?: Record<string, unknown>;
 }
 
 interface ProgressEvent {
@@ -38,10 +39,27 @@ export interface RequestPayload extends RequestInit {
     bearer?: boolean;
     timeout?: number;
     isRelative?: boolean;
+    /**
+     * Set error message to be used in `onError` callback of request provider.
+     *
+     * @deprecated Use {@linkcode RequestPayload.metadata} instead, to add additional information, such as error message
+     * that would be made available in the `onError` callback.
+     */
     errorMessage?: string;
     forceRefetch?: boolean;
     header?: RequestHeader;
+    /**
+     * Set success message to be used in `onSuccess` of request provider.
+     *
+     * @deprecated Use {@linkcode RequestPayload.metadata} instead, to add additional information, such as success message
+     * that would be made available in the `onSuccess` callback.
+     */
     successMessage?: string;
+    /**
+     * Set extra informations for a request, that would be made available on all callbacks, such
+     * as `onSuccess`, `onError`, and `interceptors`.
+     */
+    metadata?: Record<string, unknown>;
     /**
      * When set to `false`, the global success alert returned in {@linkcode RequestProviderProps.onSuccess} will be hidden for this request.
      * @default true
@@ -121,10 +139,12 @@ export interface IResponse<T> {
     loading: boolean;
     error: true | false;
     success: boolean;
+    previousData?: T | null;
+    readonly metadata?: Record<string, any>;
     data?: T | null;
     message: string;
     status?: number | string | null;
-    refetch: () => Promise<T | null | undefined>;
+    refetch: (query?: RequestPayload['query']) => Promise<T | null | undefined>;
 }
 
 export type Interceptors = {
@@ -149,7 +169,7 @@ export interface UseRequestProps<T extends any = any, K extends any = any> {
      *
      * @param res Success response object.
      */
-    onSuccess?: (res: IRequestData<T>['data']) => void;
+    onSuccess?: (res: IRequestData<T>['data'] & { message?: string }) => void;
     /**
      * A callback function that is called when the request fails.
      * The request's response error body is passed down to it.
@@ -157,7 +177,7 @@ export interface UseRequestProps<T extends any = any, K extends any = any> {
      *
      * @param error Error response object.
      */
-    onError?: (error: IRequestData<K>['data']) => void;
+    onError?: (error: IRequestData<K>['data'] & { message?: string }) => void;
     /**
      * A callback function that is called once your component mounts, it returns a
      * `makeRequest` function as an argument, that could be used to make a request on mount
@@ -210,13 +230,13 @@ export interface RequestProviderProps {
      * An optional alert component can be returned that is displayed within
      * {@linkcode RequestProviderProps.popupTimeout}
      */
-    onSuccess?: (successPayload: IRequestData['data']) => React.ReactNode | void;
+    onSuccess?: (successPayload: IRequestData['data'] & { message?: string }) => React.ReactNode | void;
     /**
      * App level request error callback, it returns the error payload.
      * An optional alert component can be returned that is
      * displayed within {@linkcode RequestProviderProps.popupTimeout}
      */
-    onError?: (errorPayload: IRequestData['data']) => React.ReactNode | void;
+    onError?: (errorPayload: IRequestData['data'] & { message?: string }) => React.ReactNode | void;
     /**
      * Callback that indicate when request is in progress. Returns `true` when in progress
      * and `false` otherwise.
@@ -279,7 +299,7 @@ export interface IRequestHandler<T> {
 
 export type HandlerDependency<T extends any = any> = Omit<
     Partial<PrivateContextProps & UseRequestProps<T>> & {
-        requestConfig?: Omit<GetRequestPayload & BodyRequestPayload & FormDataRequestPayload, 'method'> & {
+        requestConfig: Partial<Omit<GetRequestPayload & BodyRequestPayload & FormDataRequestPayload, 'method'>> & {
             method?: RequestMethod;
         };
         appLevelInterceptor?: Interceptors;
@@ -299,6 +319,7 @@ export interface IRequestData<T extends any = any> {
         statusText?: string;
         headers?: any;
         data?: T;
+        readonly metadata?: Record<string, unknown>;
         status: number;
     };
     error: boolean;

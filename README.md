@@ -67,8 +67,7 @@ const [{}, makeRequest] = useRequest();
 | timeout | Request allowed duration in `milliseconds`. When request duration exceeds this value, the request will be aborted. | `number` |   |
 | forceRefetch | It determines if stored/cached value by request, should be returned or new data should be fetched from server  | `boolean` |  `false` |
 | isRelative | It specify that the `url` passed to `makeRequest` is a relative path and force the base URL passed to either `useRequest` hook or `RequestProvider` to be prepend to the `makeRequest` function `url` regardless of if it is an absolute url or a relative path. There would most likely not be a need to set this property, as the library can determine whether to use the baseUrl based on what is passed to the `makeRequest` function. | `boolean` | `false` |
-| errorMessage | Request error message. The library tries to get the error message from the response payload and returns it in the state message prop, but this override any error message gotten from the response payload | `string` |     |
-| successMessage | Response success message. The library tries to get the success message from the response payload and returns it in the state message prop, but this override any success message gotten from the response payload | `string` |   |
+| metadata | This is an object where you can add any request metadata or information that is needed to be used elsewhere, so the content of this metadata will be made available in any of the listed request callbacks. Callbacks: `onSuccess`, `onError` & `interceptors` | `object` |   |
 | header  | Request headers. If the headers property is passed to the headers `append` it append it to any generated headers by the library otherwise it will override any generated header |  |   | 
 | query  | Request query parameters. An object that receives the query parameters and it values. It adds any assigned value the request url as query parameters | `object` |   |
 | showSuccess  | Determines whether to display a success alert for a specific request if a success alert is returned in `RequestProvider.onSuccess` | `boolean` | `true`  | 
@@ -155,11 +154,13 @@ const [{data, loading, success, error, message}, makeRequest] = useRequest();
 ```
 The `useRequest` hook provides the request metadata which are:
 - Request state
-    - data: The request returned data.
+    - data: `Any` The data returned from the request.
     - loading: `Boolean` value indicating whether the request is ongoing.
     - success: `Boolean` value indicating if the request succeeded.
     - error: `Boolean` value indicating if the request failed.
     - message: `String` either the error or success message that could be retrieve from the request.
+    - previousData: `Any` The data returned from the previous request. 
+    - refetch: `Function` A function that allows you to initiate a network request using the configuration of the most recent network request. It accepts an optional parameter, which represents query parameters. You can provide a partial set of query parameters, and these will be merged with the initial query parameters. When refetched is called, cached response from previous network request would be disregarded & a new network request would be made.
 - makeRequest: The function used to initiate the request.
 ### Parameter Properties
 `useRequest` also accepts an optional parameters, which allows the following properties:
@@ -167,9 +168,9 @@ The `useRequest` hook provides the request metadata which are:
 |  ---  |  ---  |
 |  name  | The name of the request. This should be a unique identifier, different from any other name given to other request in your application. It is used to retrieve request data stored in the application `state`, `localStorage` or `sessionStorage`.  |
 |  baseUrl | The base URL of requests made by the `makeRequest` function. `makeRequest` can be provided with path instead of absolute url, if the `baseUrl` is assigned a value.  |
-|  onSuccess  | A callback function that gets invoked when the request succeed. It receives the request's metadata, which includes the response body. This callback can be used to perform any necessary operations when the request succeeds.  |
+|  onSuccess  | A callback function that gets invoked when the request succeed. It receives the request's metadata, which includes the response body & derived success message if any. This callback can be used to perform any necessary operations when the request succeeds.  |
 |  onMount  | A callback function that is called once your component mounts, it returns a `makeRequest` function as an argument, that could be used to make a request on mount of the components.  |
-|  onError  | A callback function that gets invoked when the request fails. It receives the request's metadata, which includes the error body. This callback can be used to perform any necessary operations when the request encounters an error.  |
+|  onError  | A callback function that gets invoked when the request fails. It receives the request's metadata, which includes the error body & derived error message if any. This callback can be used to perform any necessary operations when the request encounters an error.  |
 | interceptors  | This allow request to be intercepted at the component level before the call is being made or  before the response are being passed to the component state. It allows two optional function parameters, which are `response` and `request`. See more about [intercpetors](#interceptors)  |
 |  localStorage | A `Boolean` value that determines if the request's response data should be stored in local storage. The stored value can be retrieved from any part of the application using the `useRequestData` with the `name` property.  |
 | sessionStorage | A `Boolean` value that determines if the request's response data should be stored in session storage. The stored value can be retrieved from any part of the application using the `useRequestData` with the `name` property.  |
@@ -204,7 +205,7 @@ const App = () => {
              * `data`: Request response data.
              * `status`: Request status code.
              */
-            showToast(error.message);
+            showToast(error.data.message);
             setEnableButton(true);
         },
         localStorage: true,
@@ -217,6 +218,28 @@ const App = () => {
             successMessage: "Login Successful!"
         });
     }
+    ...
+}
+```
+Refetch example.
+
+```jsx
+import { useRequest } from 'react-http-query';
+
+const App = () => {
+    const [{refetch}] = useRequest({
+        onMount: (makeUserListRequest) => 
+            // request url would be `https://base-url.com/users?page=1&limit=20`
+            makeUserListRequest('/users', { query: { page: 1, limit: 20 }})
+    });
+
+    return (
+        // `refetch` takes an optional query params which would be merged with previous query 
+        // params.
+        // request url would be `https://base-url.com/users?page=2&limit=20` retaining the limit
+        // query params.
+        <button onClick={() => refetch({ page: 2 })}>Page 2</button>
+    )
     ...
 }
 ```
@@ -294,7 +317,7 @@ const App = () => {
             baseUrl="https://www.example.com"
             authToken={authToken}
             onError={(error) => {
-                return <Toast message={error.message} />
+                return <Toast message={error.data.message} />
             }}
             interceptors={{
                 request: (payload) => ({
