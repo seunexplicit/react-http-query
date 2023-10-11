@@ -1,7 +1,7 @@
 import { HandlerDependency } from '../model';
 
 export const formatMessage = (message: any) => {
-    return Array.isArray(message) ? message.join('\n') : (message ?? '');
+    return Array.isArray(message) ? message.join('\n') : message ?? '';
 };
 
 export const getErrorMessage = (data: any, config?: HandlerDependency) => {

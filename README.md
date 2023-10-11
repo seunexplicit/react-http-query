@@ -66,10 +66,10 @@ const [{}, makeRequest] = useRequest();
 | bearer | It determines whether Authorization bearer token should be added to request header. See [Request Provider Properties](#properties) for more context. | `boolean` |  true  |
 | timeout | Request allowed duration in `milliseconds`. When request duration exceeds this value, the request will be aborted. | `number` |   |
 | forceRefetch | It determines if stored/cached value by request, should be returned or new data should be fetched from server  | `boolean` |  `false` |
-| isRelative | It specify that the `url` passed to `makeRequest` is a relative path and force the base URL passed to either `useRequest` hook or `RequestProvider` to be prepend to the `makeRequest` function `url` regardless of if it is an absolute url or a relative path. There would most likely not be a need to set this property, as the library can determine whether to use the baseUrl based on what is passed to the `makeRequest` function. | `boolean` | `false` |
-| metadata | This is an object where you can add any request metadata or information that is needed to be used elsewhere, so the content of this metadata will be made available in any of the listed request callbacks. Callbacks: `onSuccess`, `onError` & `interceptors` | `object` |   |
+| isRelative | The `isRelative` property serves to indicate whether the url provided to the `makeRequest` function is a relative path. When set to true, it enforces the addition of the base URL provided to either the `useRequest` hook or the `RequestProvider` to the url specified in the `makeRequest` function. This addition occurs regardless of whether the url is originally an absolute URL or a relative path. Typically, there is no need to explicitly set this property, as the library can determine whether to use the baseUrl based on what is passed to the `makeRequest` function. | `boolean` | `false` |
+| metadata | This object allows you to attach custom data or context to a request, making it available for use in different aspects of request handling. It's a valuable tool for including any relevant supplementary details or contextual information that may be needed at different request callbacks, such as `onSuccess`, `onError` & `interceptors` | `object` |   |
 | header  | Request headers. If the headers property is passed to the headers `append` it append it to any generated headers by the library otherwise it will override any generated header |  |   | 
-| query  | Request query parameters. An object that receives the query parameters and it values. It adds any assigned value the request url as query parameters | `object` |   |
+| query  | The `query` property represents the request query parameters. It is an object that allows you to specify the query parameters and their corresponding values for the request | `object` |   |
 | showSuccess  | Determines whether to display a success alert for a specific request if a success alert is returned in `RequestProvider.onSuccess` | `boolean` | `true`  | 
 | showError  | Determines whether to display an error alert for a specific request if an error alert is returned in `RequestProvider.onError` | `boolean` | `true` |
 | showLoader  | Determines whether to display a loader for a specific request if loader component is returned in `RequestProvider.onLoading` | `boolean` | `true`  |
@@ -160,10 +160,11 @@ The `useRequest` hook provides the request metadata which are:
     - error: `Boolean` value indicating if the request failed.
     - message: `String` either the error or success message that could be retrieve from the request.
     - previousData: `Any` The data returned from the previous request. 
-    - refetch: `Function` A function that allows you to initiate a network request using the configuration of the most recent network request. It accepts an optional parameter, which represents query parameters. You can provide a partial set of query parameters, and these will be merged with the initial query parameters. When refetched is called, cached response from previous network request would be disregarded & a new network request would be made.
-- makeRequest: The function used to initiate the request.
+    - refetch: `Function` A function that allows you to initiate a network request using the configuration of the most recent network request. It accepts an optional parameter, which represents query parameters. You can provide a partial set of query parameters, and these will be merged with the initial query parameters. When the `refetch` function is called, it disregards any cached responses from previous network requests and initiates a new network request. This ensures that you obtain fresh data from the server or endpoint.
 ### Parameter Properties
-`useRequest` also accepts an optional parameters, which allows the following properties:
+`useRequest` it accepts two optional parameters. 
+
+The first parameters is an objects that allows of the below properties:
 | Properties | Description | 
 |  ---  |  ---  |
 |  name  | The name of the request. This should be a unique identifier, different from any other name given to other request in your application. It is used to retrieve request data stored in the application `state`, `localStorage` or `sessionStorage`.  |
@@ -178,6 +179,9 @@ The `useRequest` hook provides the request metadata which are:
 | onUploadProgress | A `Function` that recieves progress events for uploads. @note available only when axios is provided in the `RequestProvider`. |
 | onDownloadProgress | A `Function` that recieves progress events for downloads. @note available only when axios is provided in the `RequestProvider`.  |
 | validateStatus | `validateStatus` defines whether to resolve or reject the promise for a given HTTP response status code. @note available only when axios is provided in the `RequestProvider`.  |
+
+The second parameter is a dependency array. When values in this array change, they trigger a rerun of the network request specified in the onMount property of the first parameter. If a network call is in progress when a dependency update occurs, that call is canceled.
+
 ### Usage Examples
 ```jsx
 import { useRequest } from 'react-http-query';

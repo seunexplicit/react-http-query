@@ -37,8 +37,9 @@ export default class RequestHandler<T = any> implements IRequestHandler<T> {
     private responsePayload: IResponse<T> = { ...getInitialState };
     private retryCount = 1;
     private stateSetter: StateSetter<T> | null = null;
+    private abortController: AbortController | undefined;
 
-    setDependency(dependency: typeof this.dependency) {
+    setDependency(dependency: Partial<HandlerDependency<T>>) {
         this.dependency = { ...this.dependency, ...dependency };
     }
 
@@ -141,6 +142,10 @@ export default class RequestHandler<T = any> implements IRequestHandler<T> {
         this.stateSetter = stateSetter;
     }
 
+    abortRequest() {
+        this.responsePayload?.loading && this.abortController?.abort();
+    }
+
     private setErrorResponse({ data }: IRequestData) {
         const { showError, metadata } = this.dependency.requestConfig;
         const message = getErrorMessage(data?.data ?? data, this.dependency);
@@ -202,6 +207,7 @@ export default class RequestHandler<T = any> implements IRequestHandler<T> {
 
             const { controller, timeoutRef } =
                 getRequestAbortter(requestConfig?.timeout ?? appLevelTimeout) ?? {};
+            this.abortController = controller;
 
             const response = await (axiosInstance
                 ? makeAxiosRequest(axiosInstance, payload, this.dependency, controller)
