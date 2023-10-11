@@ -299,7 +299,9 @@ export interface IRequestHandler<T> {
 
 export type HandlerDependency<T extends any = any> = Omit<
     Partial<PrivateContextProps & UseRequestProps<T>> & {
-        requestConfig: Partial<Omit<GetRequestPayload & BodyRequestPayload & FormDataRequestPayload, 'method'>> & {
+        requestConfig: Partial<
+            Omit<GetRequestPayload & BodyRequestPayload & FormDataRequestPayload, 'method'>
+        > & {
             method?: RequestMethod;
         };
         appLevelInterceptor?: Interceptors;

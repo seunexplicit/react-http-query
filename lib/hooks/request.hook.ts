@@ -1,11 +1,14 @@
 import MemoryStorageContext from '../contexts/memory-storage.context';
 import PrivateContext from '../contexts/private.context';
-import { IResponse, MakeRequest, UseRequestProps } from '../model';
-import { useContext, useEffect, useMemo, useState } from 'react';
 import RequestHandler from '../handler/request-handler';
 import { getInitialState } from '../helpers/request.helper';
+import { IResponse, MakeRequest, UseRequestProps } from '../model';
+import { useContext, useEffect, useMemo, useState } from 'react';
 
-export const useRequest = <T = any>(props?: UseRequestProps<T>): [IResponse<T>, MakeRequest<T>] => {
+export const useRequest = <T = any>(
+    props?: UseRequestProps<T>,
+    dependency?: Array<unknown>
+): [IResponse<T>, MakeRequest<T>] => {
     const requestHandler = useMemo(() => {
         const handler = new RequestHandler<T>();
         return handler;
@@ -61,9 +64,10 @@ export const useRequest = <T = any>(props?: UseRequestProps<T>): [IResponse<T>, 
     ]);
 
     useEffect(() => {
+        requestHandler.abortRequest();
         props?.onMount?.(makeRequest);
         requestHandler.setStateSetter(setState);
-    }, []);
+    }, dependency ?? []);
 
     return state;
 };
