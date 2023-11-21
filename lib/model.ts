@@ -210,6 +210,12 @@ export interface UseRequestProps<T extends any = any, K extends any = any> {
      * @note axiosInstance only.
      */
     validateStatus?: (status: number) => boolean;
+    /**
+     * Determines whether the request should be made to the server.
+     * If it's an array, waits until none of its items are undefined, null, or an empty string.
+     * If it's a non-array, waits until it resolves to a truthy value or 0.
+    */
+    enableRequest?: boolean | unknown;
 }
 
 export interface RequestProviderProps {

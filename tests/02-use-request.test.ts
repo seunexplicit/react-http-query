@@ -9,11 +9,12 @@ import {
     waitFor,
     __BAD_RESPONSE__,
     __MOCK_DATA__,
+    delay,
 } from './test-util';
 import fetchMock from 'jest-fetch-mock';
 import { useRequest } from '../lib';
 import StorageMock from './mock-storage';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { MakeRequest } from '../lib/model';
 
 fetchMock.enableMocks();
@@ -30,7 +31,7 @@ describe('useRequest', () => {
     });
 
     test('should get reponse payload from `onSuccess` callback', async () => {
-        let responsePayload: any;
+        let responsePayload;
 
         const { result } = renderHook(() =>
             useRequest({
@@ -263,6 +264,72 @@ describe('useRequest', () => {
         await act(() => makeRequest('/request/path'));
 
         expect(fetchMock.mock.calls[0][0]).toBe('http://baseUrl/request/path');
+    });
+
+    test('should not make request if `enableRequest` is set to `false`', async () => {
+        const { result: { current } } = renderHook(
+            () => {
+                const [enableRequest, setEnableRequest] = useState(false);
+
+                useRequest({
+                    enableRequest,
+                    onMount(makeRequest) {
+                        makeRequest(GOOD_URL)
+                    },
+                });
+
+                return setEnableRequest;
+                
+            },
+            { wrapper: StrictMode }
+        );
+
+        expect(fetchMock).not.toBeCalled();
+
+        act(() => { current(true); })
+        await delay(0);
+
+        expect(fetchMock).toHaveBeenCalled();
+    });
+
+    test('should not make request if `enableRequest` has a nullable or an empty string value', async () => {
+        const { result: { current } } = renderHook(
+            () => {
+                const [undefinedVal, setUndefinedVal] = useState<unknown>(undefined);
+                const [nullVal, setNullVal] = useState<unknown>(null);
+                const [emptyStringVal, setEmptyStringVal] = useState<unknown>('');
+
+                useRequest({
+                    enableRequest: [undefinedVal, nullVal, emptyStringVal],
+                    onMount(makeRequest) {
+                        makeRequest(GOOD_URL)
+                    },
+                });
+
+                return { setUndefinedVal, setNullVal, setEmptyStringVal };
+                
+            },
+            { wrapper: StrictMode }
+        );
+
+        const { setUndefinedVal, setNullVal, setEmptyStringVal } = current;
+
+        expect(fetchMock).not.toBeCalled();
+
+        act(() => { setUndefinedVal('undefined'); })
+        await delay(0);
+
+        expect(fetchMock).not.toBeCalled();
+
+        act(() => { setNullVal({}); })
+        await delay(0);
+
+        expect(fetchMock).not.toBeCalled();
+
+        act(() => { setEmptyStringVal(0); })
+        await delay(0);
+
+        expect(fetchMock).toHaveBeenCalled();
     });
 
     test(`should use baseUrl passed to useRequest if url passed to makeRequest is absolute url 

@@ -178,6 +178,7 @@ The first parameters is an objects that allows of the below properties:
 |  memoryStorage  | A `Boolean` value that determines if the request's response data should be stored in the application memory(state). A browser refresh would cause the data stored to be lost, except the request is made again. The stored value can be retrieved from any part of the application using the `useRequestData` with the `name` property.  |
 | onUploadProgress | A `Function` that recieves progress events for uploads. @note available only when axios is provided in the `RequestProvider`. |
 | onDownloadProgress | A `Function` that recieves progress events for downloads. @note available only when axios is provided in the `RequestProvider`.  |
+| enableRequest | Determines whether the request should be made to the server. If it's an array, waits until none of its items are undefined, null, or an empty string. If it's a non-array, waits until it resolves to a truthy value or 0.  |
 | validateStatus | `validateStatus` defines whether to resolve or reject the promise for a given HTTP response status code. @note available only when axios is provided in the `RequestProvider`.  |
 
 The second parameter is a dependency array. When values in this array change, they trigger a rerun of the network request specified in the onMount property of the first parameter. If a network call is in progress when a dependency update occurs, that call is canceled.

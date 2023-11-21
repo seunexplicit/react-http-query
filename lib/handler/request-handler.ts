@@ -49,6 +49,8 @@ export default class RequestHandler<T = any> implements IRequestHandler<T> {
 
     private isLoading() {
         this.responsePayload = { ...this.responsePayload, loading: true };
+
+        this.stateSetter?.((initialState) => [this.responsePayload, initialState[1]]);
     }
 
     get requestMethod(): RequestMethod {
@@ -93,6 +95,7 @@ export default class RequestHandler<T = any> implements IRequestHandler<T> {
     private refetch(queryParam: RequestPayload['query'] = {}) {
         return this.makeRequest(this.dependency.path ?? '', {
             ...this.dependency.requestConfig,
+            forceRefetch: true,
             query: { ...this.dependency.requestConfig?.query, ...queryParam },
         } as FormDataRequestPayload);
     }
