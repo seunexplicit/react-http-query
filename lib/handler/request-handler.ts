@@ -92,7 +92,7 @@ export default class RequestHandler<T = any> implements IRequestHandler<T> {
         };
     }
 
-    private refetch(queryParam: RequestPayload['query'] = {}) {
+    refetch(queryParam: RequestPayload['query'] = {}) {
         return this.makeRequest(this.dependency.path ?? '', {
             ...this.dependency.requestConfig,
             forceRefetch: true,

@@ -17,7 +17,10 @@ export const useRequest = <T = any>(
 
     const makeRequest = useMemo(() => requestHandler.makeRequest.bind(requestHandler), []);
 
-    const [state, setState] = useState<[IResponse<T>, MakeRequest<T>]>([getInitialState, makeRequest]);
+    const [state, setState] = useState<[IResponse<T>, MakeRequest<T>]>([
+        { ...getInitialState, refetch: requestHandler.refetch.bind(requestHandler) },
+        makeRequest,
+    ]);
 
     const {
         baseUrl,
